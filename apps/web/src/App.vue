@@ -5,7 +5,19 @@
         <h1>程序血缘地图</h1>
         <p class="kicker">嵌入式四视图 · 非独立产品壳</p>
       </div>
-      <form class="search" @submit.prevent="runSearch">
+      <nav class="shell-nav" aria-label="嵌入页">
+        <button
+          type="button"
+          :class="{ active: shellPage === 'workbench' }"
+          @click="goWorkbench"
+        >
+          血缘工作台
+        </button>
+        <button type="button" :class="{ active: shellPage === 'import' }" @click="goImport">
+          数据导入
+        </button>
+      </nav>
+      <form v-if="shellPage === 'workbench'" class="search" @submit.prevent="runSearch">
         <input
           v-model="q"
           type="search"
@@ -18,8 +30,22 @@
       </form>
     </header>
 
-    <p v-if="error" class="banner error" role="alert">{{ error }}</p>
+    <exception-banner
+      v-if="shellPage === 'workbench'"
+      :banner="workbenchBanner"
+      @research="onResearch"
+      @go-import="goImport"
+    />
+    <exception-banner v-if="shellPage === 'workbench' && qualityBanner" :banner="qualityBanner" />
     <p v-if="notice" class="banner notice">{{ notice }}</p>
+
+    <import-page
+      v-if="shellPage === 'import'"
+      :initial-run-id="importRunId"
+      @run="onImportRun"
+    />
+
+    <template v-if="shellPage === 'workbench'">
 
     <section v-if="hits.length" class="hits">
       <button
@@ -123,6 +149,7 @@
         @change-root="changeRoot"
       />
     </div>
+    </template>
   </div>
 </template>
 
@@ -149,6 +176,13 @@ import {
   treeUnavailable,
   viewStateFromApp
 } from './url/viewState.js'
+import {
+  bannerForError,
+  coverageBanner,
+  idleWorkbenchBanner,
+  noHitsBanner,
+  shouldDestroyQuery
+} from './exceptions/queryExceptions.js'
 import LineageTree from './components/LineageTree.vue'
 import CrossPanel from './components/CrossPanel.vue'
 import DetailPanel from './components/DetailPanel.vue'
@@ -157,6 +191,8 @@ import TypeFilter from './components/TypeFilter.vue'
 import OverviewView from './components/OverviewView.vue'
 import ImpactView from './components/ImpactView.vue'
 import PathView from './components/PathView.vue'
+import ImportPage from './components/ImportPage.vue'
+import ExceptionBanner from './components/ExceptionBanner.vue'
 
 var emptyIndex = indexProjection({ nodes: [], edges: [] })
 
@@ -177,10 +213,15 @@ export default {
     TypeFilter,
     OverviewView,
     ImpactView,
-    PathView
+    PathView,
+    ImportPage,
+    ExceptionBanner
   },
   data: function () {
     return {
+      shellPage: 'workbench',
+      importRunId: '',
+      exception: null,
       q: '',
       hits: [],
       searching: false,
@@ -262,6 +303,18 @@ export default {
     },
     cycleHint: function () {
       return cycleNotice(this.meta && this.meta.treeStatus) || '主树分类不可用。请使用影响清单或最短路径。'
+    },
+    workbenchBanner: function () {
+      if (this.exception) {
+        return this.exception
+      }
+      if (this.hits.length || this.searching || this.meta) {
+        return null
+      }
+      return idleWorkbenchBanner()
+    },
+    qualityBanner: function () {
+      return coverageBanner(this.meta)
     }
   },
   watch: {
@@ -321,7 +374,17 @@ export default {
       if (typeof window === 'undefined' || !window.history || !window.history.replaceState) {
         return
       }
-      var qs = serializeViewState(viewStateFromApp(this))
+      var qs
+      if (this.shellPage === 'import') {
+        var params = new URLSearchParams()
+        params.set('page', 'import')
+        if (this.importRunId) {
+          params.set('runId', this.importRunId)
+        }
+        qs = params.toString()
+      } else {
+        qs = serializeViewState(viewStateFromApp(this))
+      }
       var next = window.location.pathname + (qs ? '?' + qs : '') + (window.location.hash || '')
       var cur = window.location.pathname + window.location.search + (window.location.hash || '')
       if (next !== cur) {
@@ -332,6 +395,15 @@ export default {
       if (typeof window === 'undefined') {
         return
       }
+      var params = new URLSearchParams(window.location.search || '')
+      if (params.get('page') === 'import') {
+        this.shellPage = 'import'
+        this.importRunId = params.get('runId') || ''
+        this.syncingUrl = false
+        this.restoringUrl = false
+        return
+      }
+      this.shellPage = 'workbench'
       var state = parseViewState(window.location.search)
       this.syncingUrl = true
       this.mode = state.mode
@@ -353,6 +425,53 @@ export default {
         self.syncingUrl = false
         self.writeUrl()
       })
+    },
+    goWorkbench: function () {
+      this.shellPage = 'workbench'
+      this.writeUrl()
+    },
+    goImport: function () {
+      this.shellPage = 'import'
+      this.writeUrl()
+    },
+    onImportRun: function (runId) {
+      this.importRunId = runId || ''
+      this.writeUrl()
+    },
+    onResearch: function () {
+      this.exception = null
+      this.error = ''
+      this.hits = []
+      this.notice = '请重新搜索以建立新的查询上下文。'
+    },
+    fail: function (err, fallback) {
+      if (isAbortError(err)) {
+        return
+      }
+      var banner = bannerForError(err, { fallback: fallback || '请求失败' })
+      this.exception = banner
+      this.error = banner.message
+      if (shouldDestroyQuery(banner.code)) {
+        this.destroyQuery()
+      }
+    },
+    destroyQuery: function () {
+      this.cancelInFlight()
+      this.meta = null
+      this.stats = null
+      this.seed = null
+      this.projection = null
+      this.index = emptyIndex
+      this.candidateIds = []
+      this.expanded = {}
+      this.childPages = {}
+      this.selectedId = null
+      this.detail = null
+      this.relations = []
+      this.pins = []
+      this.resetAuxViews()
+      this.revision.reset()
+      this.viewNonce += 1
     },
     fetchActiveView: function () {
       if (!this.queryId) {
@@ -410,6 +529,7 @@ export default {
       }
       this.searching = true
       this.error = ''
+      this.exception = null
       var seq = ++this.searchSeq
       var extra = { signal: this.abortSignal() }
       if (this.queryId) {
@@ -423,8 +543,10 @@ export default {
           }
           self.hits = (res && res.items) || []
           if (!self.hits.length) {
-            self.notice = '没有命中。若尚未发布快照，请先按 README 导入 fixtures/v1。'
+            self.exception = noHitsBanner()
+            self.notice = ''
           } else {
+            self.exception = null
             self.notice = ''
           }
         })
@@ -433,7 +555,7 @@ export default {
             return
           }
           self.hits = []
-          self.error = (err && err.message) || '搜索失败'
+          self.fail(err, '搜索失败')
         })
         .then(function () {
           if (seq === self.searchSeq) {
@@ -456,6 +578,7 @@ export default {
       opts = opts || {}
       this.cancelInFlight()
       this.error = ''
+      this.exception = null
       this.notice = ''
       this.resetAuxViews()
       this.revision.reset()
@@ -516,7 +639,7 @@ export default {
           if (isAbortError(err)) {
             return
           }
-          self.error = (err && err.message) || '创建查询失败'
+          self.fail(err, '创建查询失败')
         })
         .then(function () {
           self.restoringUrl = false
@@ -554,8 +677,21 @@ export default {
       }
       if (outcome.error) {
         this.error = outcome.error
+        if (outcome.keepOld && input.error && !shouldDestroyQuery((input.error && input.error.code) || '')) {
+          this.exception = bannerForError({
+            code: input.error.code,
+            status: input.error.status,
+            message: outcome.error,
+            body: input.error.body
+          })
+        } else if (input.error) {
+          this.fail(input.error, outcome.error)
+        } else {
+          this.exception = bannerForError({ message: outcome.error })
+        }
       } else if (!outcome.stale) {
         this.error = ''
+        this.exception = null
       }
       if (outcome.notice) {
         this.notice = outcome.notice
@@ -682,7 +818,7 @@ export default {
           if (isAbortError(err)) {
             return
           }
-          self.error = (err && err.message) || '加载子对象失败'
+          self.fail(err, '加载子对象失败')
         })
     },
     recordChildPage: function (nodeId, page, append) {
@@ -754,7 +890,7 @@ export default {
           }
           self.detail = null
           self.relations = []
-          self.error = (err && err.message) || '加载详情失败'
+          self.fail(err, '加载详情失败')
         })
         .then(function () {
           if (seq === self.detailSeq) {
@@ -812,7 +948,7 @@ export default {
           if (seq !== self.overviewSeq || isAbortError(err)) {
             return
           }
-          self.error = (err && err.message) || '加载总览失败'
+          self.fail(err, '加载总览失败')
         })
         .then(function () {
           if (seq === self.overviewSeq) {
@@ -845,7 +981,7 @@ export default {
           if (seq !== self.membersSeq || isAbortError(err)) {
             return
           }
-          self.error = (err && err.message) || '加载簇成员失败'
+          self.fail(err, '加载簇成员失败')
         })
         .then(function () {
           if (seq === self.membersSeq) {
@@ -886,7 +1022,7 @@ export default {
           if (seq !== self.impactSeq || isAbortError(err)) {
             return
           }
-          self.error = (err && err.message) || '加载影响清单失败'
+          self.fail(err, '加载影响清单失败')
         })
         .then(function () {
           if (seq === self.impactSeq) {
@@ -926,7 +1062,7 @@ export default {
             return
           }
           self.pathResult = null
-          self.error = (err && err.message) || '加载路径失败'
+          self.fail(err, '加载路径失败')
         })
         .then(function () {
           if (seq === self.pathSeq) {
@@ -956,7 +1092,7 @@ export default {
             return
           }
           self.evidenceItems = []
-          self.error = (err && err.message) || '加载证据失败'
+          self.fail(err, '加载证据失败')
         })
         .then(function () {
           if (seq === self.evidenceSeq) {
@@ -1021,6 +1157,18 @@ h1 {
   font-size: 0.8rem;
 }
 
+.shell-nav {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.shell-nav button.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
 .search {
   display: flex;
   gap: 8px;
@@ -1073,6 +1221,86 @@ button:disabled {
 .banner.notice {
   background: #fff8c5;
   color: #633f00;
+}
+
+.banner.empty {
+  background: #f6f8fa;
+  color: var(--muted);
+}
+
+.exception-banner .banner-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: baseline;
+}
+
+.ex-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.75rem;
+}
+
+.issue-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  font-size: 0.8rem;
+}
+
+.issue-list li {
+  margin: 4px 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: baseline;
+}
+
+.banner-actions {
+  margin-top: 6px;
+}
+
+.import-page {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.72);
+  padding: 8px 10px 12px;
+}
+
+.import-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.import-json {
+  width: 100%;
+  min-height: 180px;
+  box-sizing: border-box;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px;
+  background: #f6f8fa;
+  resize: vertical;
+}
+
+.import-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.file-label {
+  font-size: 0.8rem;
+  color: var(--muted);
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.import-run {
+  margin: 10px 0;
 }
 
 .hits {

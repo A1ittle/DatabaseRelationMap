@@ -10,7 +10,7 @@
 | [完整实现设计](docs/07-implementation-design.md) | 已收敛的架构、技术栈、数据模型、算法、API、前端状态、权限及部署 |
 | [开源参考与采用理由](docs/06-opensource-research.md) | 六个项目的已核实能力、源码证据、借鉴点与复用边界 |
 
-HANDOFF 设计默认方案仍为 React + TypeScript + React Flow；Java 21 + Spring Boot 4.1.x；PostgreSQL 17（见 [HANDOFF.md](HANDOFF.md)，不改产品语义）。P0 工程骨架按项目管理要求为 **Java 8 + Spring Boot 2.7.x + Vue 2 嵌入式空壳**，见 [ADR 0001](docs/adr/0001-java8-vue2-embedded-vs-handoff.md)、[依赖基线](docs/DEPENDENCY_BASELINE.md) 与 [本地运行](docs/RUNBOOK.md)。PostgreSQL 由 SRE 提供，本仓库不提交密钥或 `.env`。
+HANDOFF 设计默认方案仍为 React + TypeScript + React Flow；Java 21 + Spring Boot 4.1.x；PostgreSQL 17（见 [HANDOFF.md](HANDOFF.md)，不改产品语义）。工程栈按项目管理要求为 **Java 8 + Spring Boot 2.7.x + Vue 2 嵌入式壳**，见 [ADR 0001](docs/adr/0001-java8-vue2-embedded-vs-handoff.md)、[依赖基线](docs/DEPENDENCY_BASELINE.md) 与 [本地运行](docs/RUNBOOK.md)。PostgreSQL 由 SRE 提供，本仓库不提交密钥或 `.env`。P4：四视图 + URL 恢复 + 数据导入/发布页与异常态（见 [进度](docs/IMPLEMENTATION_PROGRESS.md)）。
 
 ## 机器可读规格与示例
 
@@ -39,9 +39,9 @@ HANDOFF 设计默认方案仍为 React + TypeScript + React Flow；Java 21 + Spr
 
 真实关系数据、企业登录/对象权限映射、目标部署环境仍未提供。设计采用明确默认值使本地编码可继续；真实接入、性能、SSO 和生产部署需后续单独验收。
 
-## 本地空壳启动（P0）
+## 本地启动
 
-业务功能尚未实现。空前端与空 API 可在无数据库时启动，命令见 [RUNBOOK](docs/RUNBOOK.md)。
+前端工作台与导入页、API 健康检查可在无数据库时启动；导入/查询需要 PostgreSQL。命令见 [RUNBOOK](docs/RUNBOOK.md)。
 
 ```bash
 cd apps/web && npm install && npm run dev     # http://127.0.0.1:5173

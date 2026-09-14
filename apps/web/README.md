@@ -1,16 +1,17 @@
 # lineage-web
 
 P4 Vue 2 embedded shell for 程序血缘地图: search → create query → four views
-(tree / overview / impact / path) + URL restore. P3 tree / detail / cross /
-budget keep-old still work. No React Flow (ADR 0001). Graph layout
-(`src/graph/*`) is separate from API/domain. Lists and paths always come from
-their APIs, never from the on-screen tree.
+(tree / overview / impact / path) + URL restore + **数据导入** (validate/publish)
+and distinct exception banners. P3 tree / detail / cross / budget keep-old
+still work. No React Flow (ADR 0001). Graph layout (`src/graph/*`) is separate
+from API/domain. Lists and paths always come from their APIs, never from the
+on-screen tree. Fixtures are **not** real lineage.
 
 ```bash
 npm install
 npm run generate:api  # spec/v1/openapi.json → src/generated/openapi.d.ts
 npm run dev           # http://127.0.0.1:5173
-npm run test          # vitest (URL encode/decode, view-state, revision, budget)
+npm run test          # vitest (URL, importClient, exception banners, budget)
 npm run build
 ```
 
@@ -44,11 +45,14 @@ the first page).
 | `selectedId` | object id | After the query exists, `GET .../nodes/{id}` (and may `POST projection` with `revealSelectedPath` if the object is not on the default canvas) |
 | `targetId` | object id | Path view: `GET .../path?targetId=` |
 | `types` | comma list `table,view,procedure,java` | Overview / impact filter; omit = all four types |
+| `page` | `import` (omit = 血缘工作台) | Switches to the import/validate/publish page |
+| `runId` | ingest run id | Only with `page=import`; reloads `GET /api/imports/{runId}` |
 
 Example:
 
 ```text
 /?mode=path&seedId=root&snapshotId=snap-1&selectedId=view-a&targetId=java-j&types=table,java
+/?page=import&runId=…
 ```
 
 Keyboard: view tabs are a `tablist` (Tab moves focus; ←/→ or Home/End change
@@ -92,6 +96,22 @@ Needs a running API with `fixtures/v1/import.json` imported and published
    show **检测到循环依赖，已切换关系清单**; the tree tab is unavailable, list/path
    remain.
 
+10. **数据导入** (nav 血缘工作台 | 数据导入): paste or upload ImportBatch JSON
+    (documented sample path `fixtures/v1/import.json`, not production lineage).
+    `POST /api/imports` → 202 with runId/status/errorCount/warningCount/snapshotId;
+    `GET /api/imports/{runId}` paginates issues; **发布** when status is `ready`
+    (`POST .../publish` with `expectedActiveSnapshotId`, empty = `null`).
+    Oversize → `PAYLOAD_TOO_LARGE` / 413; schema errors → `IMPORT_INVALID` plus
+    the issues list; CAS mismatch → `PUBLISH_CONFLICT`. Same CSRF
+    `X-CSRF-Token: dev` and optional `X-Embed-Groups` as the query UI.
+
+11. **异常态**: empty / no snapshot / no hits; `LINEAGE_NOT_COLLECTED` (未采集);
+    request failure / `TEMPORARILY_UNAVAILABLE`; `POLICY_CHANGED` and
+    `QUERY_EXPIRED` destroy the query context and prompt 重新搜索; incomplete
+    `coverage` / `computationStatus` as quality notices; `FORBIDDEN` /
+    `UNAUTHENTICATED` only when the API returns those codes (embed groups /
+    demo-header — no invented OIDC mappings). Cycle 环→清单/路径 stays as in (9).
+
 Without a UI, the same expand path can be curled:
 
 ```bash
@@ -107,4 +127,4 @@ Exits 2 with import/publish instructions if the API is down. Fixtures are
 Client types are generated with `openapi-typescript` 7.x from
 `../../spec/v1/openapi.json`. Output is committed at
 `src/generated/openapi.d.ts`. Runtime calls are plain `fetch` in
-`src/api/lineageClient.js` (Vue 2 remains JavaScript).
+`src/api/lineageClient.js` and `src/api/importClient.js` (Vue 2 remains JavaScript).

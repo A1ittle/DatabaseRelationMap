@@ -1,0 +1,45 @@
+command: npm test && npm run build
+cwd: apps/web
+started: 2026-09-14T15:48:35Z
+node: v22.23.2 npm: 10.9.8
+note: P4 import/validate/publish page + query exception banners. Same CSRF X-CSRF-Token: dev and optional X-Embed-Groups. Sample path fixtures/v1/import.json is not production lineage. No React Flow. No OIDC.
+----- stdout -----
+
+> lineage-web@0.0.0 test
+> vitest run
+
+
+ RUN  v1.6.1 /workspace/DatabaseRelationMap/apps/web
+
+ ✓ src/exceptions/queryExceptions.test.js  (7 tests)
+ ✓ src/graph/revision.test.js  (4 tests)
+ ✓ src/api/importClient.test.js  (5 tests)
+ ✓ src/graph/projectionSession.test.js  (3 tests)
+ ✓ src/graph/crossList.test.js  (2 tests)
+ ✓ src/api/lineageClient.test.js  (5 tests)
+ ✓ src/url/viewState.test.js  (9 tests)
+ ✓ src/graph/drawnStats.test.js  (2 tests)
+ ✓ src/config.test.js  (2 tests)
+ ✓ src/graph/layout.test.js  (1 test)
+ ✓ src/graph/treeFromProjection.test.js  (2 tests)
+
+ Test Files  11 passed (11)
+      Tests  42 passed (42)
+   Duration  554ms
+
+
+> lineage-web@0.0.0 build
+> vite build
+
+vite v4.5.14 building for production...
+transforming...
+✓ 40 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.45 kB │ gzip:  0.33 kB
+dist/assets/index-8f754f09.css    7.75 kB │ gzip:  2.17 kB
+dist/assets/index-5ac404cb.js   133.22 kB │ gzip: 43.78 kB
+✓ built in 704ms
+----- end -----
+exit_code: 0
+finished: 2026-09-14T15:48:41Z
