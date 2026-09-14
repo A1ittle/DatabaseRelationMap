@@ -1,0 +1,42 @@
+command: npm test && npm run build
+cwd: apps/web
+started: 2026-09-14T15:11:26Z
+node: v22.23.2 npm: 10.9.8
+note: P3 projection state, cross-list locate, change-root, drawn stats, budget keep-old. No React Flow. No OIDC. Fixtures are not real lineage. Oversize candidateIds used only as a synthetic vitest mock.
+----- stdout -----
+
+> lineage-web@0.0.0 test
+> vitest run
+
+
+ RUN  v1.6.1 /workspace/DatabaseRelationMap/apps/web
+
+ ✓ src/graph/crossList.test.js  (2 tests)
+ ✓ src/graph/revision.test.js  (4 tests)
+ ✓ src/graph/layout.test.js  (1 test)
+ ✓ src/graph/treeFromProjection.test.js  (2 tests)
+ ✓ src/graph/drawnStats.test.js  (2 tests)
+ ✓ src/graph/projectionSession.test.js  (3 tests)
+ ✓ src/api/lineageClient.test.js  (4 tests)
+ ✓ src/config.test.js  (2 tests)
+
+ Test Files  8 passed (8)
+      Tests  20 passed (20)
+   Duration  501ms
+
+
+> lineage-web@0.0.0 build
+> vite build
+
+vite v4.5.14 building for production...
+transforming...
+✓ 23 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                  0.45 kB │ gzip:  0.32 kB
+dist/assets/index-8001f2ec.css   4.17 kB │ gzip:  1.48 kB
+dist/assets/index-e9eaa2ce.js   96.25 kB │ gzip: 33.96 kB
+✓ built in 595ms
+----- end -----
+exit_code: 0
+finished: 2026-09-14T15:11:34Z

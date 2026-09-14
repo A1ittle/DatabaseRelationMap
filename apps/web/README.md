@@ -2,13 +2,15 @@
 
 P3 Vue 2 embedded shell for 程序血缘地图: search → create query → default
 one-level downstream tree → node detail → children pagination → full
-projection replace. No React Flow (ADR 0001); expandable tree + detail panel.
+projection replace → cross-list locate → change-root → drawn stats → budget
+keep-old. No React Flow (ADR 0001); expandable tree + detail / cross panels.
+Graph layout (`src/graph/*`) is separate from API/domain.
 
 ```bash
 npm install
 npm run generate:api  # spec/v1/openapi.json → src/generated/openapi.d.ts
 npm run dev           # http://127.0.0.1:5173
-npm run test          # vitest (revision guard, tree index, API client)
+npm run test          # vitest (revision, budget keep-old, cross list, layout)
 npm run build
 ```
 
@@ -39,9 +41,21 @@ Needs a running API with `fixtures/v1/import.json` imported and published
    (cursor pagination / 加载更多) then `POST .../projection` with
    `candidateIds` and a new `clientRevision`. The UI **replaces** nodes/edges
    atomically and **drops** responses whose revision is older than current.
-5. Tree edges use class `kind-tree`; cross edges `kind-cross`.
+5. Tree edges use class `kind-tree`; cross / unclassified edges `kind-cross` /
+   `kind-unclassified`. The **跨支 / 未分类** panel lists the same set from
+   projection kinds (independent of expand order). **定位** pins the other
+   endpoint into candidates and refreshes projection with `revealSelectedPath`
+   when that node is not already drawn.
+6. Meta bar **绘制节点 / 边** is the actual rendered projection count (tree vs
+   cross), not only server `stats.downstream` (kept as **服务端 下游**).
+7. **换根**: select a non-seed object (详情 `canSetAsRoot`) and click 换根.
+   This cancels in-flight requests, clears expand pages and locate pins, creates
+   a new query with that object as seed, and remounts the tree (fit/reset).
+8. If projection returns `PROJECTION_LIMIT` (API 4xx when the visible set would
+   exceed 200 objects or 2000 relations), the previous canvas is **kept** and
+   the banner reads **超预算，已保留原图**. Edges are never dropped silently.
 
-Without a UI, the same path can be curled:
+Without a UI, the same expand path can be curled:
 
 ```bash
 chmod +x scripts/demo-deep-expand.sh

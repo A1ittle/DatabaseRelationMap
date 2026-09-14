@@ -33,4 +33,15 @@ describe('createRevisionGuard', function () {
     expect(guard.current()).toBe(0)
     expect(guard.shouldApply(0, 0)).toBe(true)
   })
+
+  it('drops in-flight revisions after reset via epoch', function () {
+    var guard = createRevisionGuard()
+    var sent = guard.next()
+    var sentEpoch = guard.epoch()
+    expect(guard.shouldApply(sent, sent, sentEpoch)).toBe(true)
+    guard.reset()
+    expect(guard.shouldApply(sent, sent, sentEpoch)).toBe(false)
+    expect(guard.isStale(sent, sentEpoch)).toBe(true)
+    expect(guard.shouldApply(0, 0, guard.epoch())).toBe(true)
+  })
 })

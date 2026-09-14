@@ -42,11 +42,14 @@
       <span>rev {{ revision.current() }}</span>
       <span>tree {{ meta.treeStatus }}</span>
       <span>coverage {{ meta.coverage }}</span>
-      <span v-if="stats">下游 {{ stats.downstream }} · 跨支 {{ stats.crossEdges }} · Java {{ stats.javaTerminals }}</span>
+      <span v-if="drawn">绘制节点 {{ drawn.nodes }} / 边 {{ drawn.edges }}（主树 {{ drawn.tree }} · 跨支 {{ drawn.cross }}<template v-if="drawn.unclassified"> · 未分类 {{ drawn.unclassified }}</template>）</span>
+      <span v-if="stats">服务端 下游 {{ stats.downstream }} · 跨支 {{ stats.crossEdges }} · Java {{ stats.javaTerminals }}</span>
+      <button type="button" class="ghost" :disabled="!canChangeRoot" @click="changeRoot">换根</button>
     </section>
 
     <div class="workspace">
       <lineage-tree
+        :key="'tree-' + viewNonce"
         :index="index"
         :roots="roots"
         :expanded="expanded"
@@ -56,7 +59,20 @@
         @toggle="toggleExpand"
         @more="loadMoreChildren"
       />
-      <detail-panel :detail="detail" :relations="relations" :loading="detailLoading" />
+      <cross-panel
+        v-if="meta"
+        :edges="crossEdges"
+        :selected-id="selectedId"
+        :nodes-by-id="index.nodesById"
+        @locate="locateCross"
+      />
+      <detail-panel
+        :detail="detail"
+        :relations="relations"
+        :loading="detailLoading"
+        :can-change-root="canChangeRoot"
+        @change-root="changeRoot"
+      />
     </div>
   </div>
 </template>
@@ -64,20 +80,33 @@
 <script>
 import { lineageClient } from './api/lineageClient.js'
 import { createRevisionGuard } from './graph/revision.js'
+import { listNonTreeEdges, otherEndpoint } from './graph/crossList.js'
+import { drawnStats } from './graph/drawnStats.js'
+import {
+  isAbortError,
+  resolveProjectionOutcome
+} from './graph/projectionSession.js'
 import {
   indexProjection,
   findRoots,
-  candidateIdsFromProjection,
   mergeCandidateIds
 } from './graph/treeFromProjection.js'
 import LineageTree from './components/LineageTree.vue'
+import CrossPanel from './components/CrossPanel.vue'
 import DetailPanel from './components/DetailPanel.vue'
 
 var emptyIndex = indexProjection({ nodes: [], edges: [] })
 
+function freshAbort() {
+  if (typeof AbortController === 'undefined') {
+    return { abort: function () {}, signal: undefined }
+  }
+  return new AbortController()
+}
+
 export default {
   name: 'App',
-  components: { LineageTree, DetailPanel },
+  components: { LineageTree, CrossPanel, DetailPanel },
   data: function () {
     return {
       q: '',
@@ -100,7 +129,10 @@ export default {
       revision: createRevisionGuard(),
       searchSeq: 0,
       detailSeq: 0,
-      projectInFlight: false
+      projectInFlight: false,
+      pins: [],
+      abortCtl: freshAbort(),
+      viewNonce: 0
     }
   },
   computed: {
@@ -112,9 +144,40 @@ export default {
     },
     roots: function () {
       return findRoots(this.index, this.seedId)
+    },
+    drawn: function () {
+      return drawnStats(this.projection)
+    },
+    crossEdges: function () {
+      return listNonTreeEdges(this.projection)
+    },
+    canChangeRoot: function () {
+      if (!this.selectedId || this.selectedId === this.seedId) {
+        return false
+      }
+      if (this.detail && this.detail.canSetAsRoot === false) {
+        return false
+      }
+      return true
     }
   },
   methods: {
+    abortSignal: function () {
+      return this.abortCtl && this.abortCtl.signal
+    },
+    cancelInFlight: function () {
+      if (this.abortCtl && this.abortCtl.abort) {
+        try {
+          this.abortCtl.abort()
+        } catch (err) {
+          /* ignore */
+        }
+      }
+      this.abortCtl = freshAbort()
+      this.searchSeq += 1
+      this.detailSeq += 1
+      this.projectInFlight = false
+    },
     runSearch: function () {
       var self = this
       var q = (this.q || '').trim()
@@ -124,7 +187,10 @@ export default {
       this.searching = true
       this.error = ''
       var seq = ++this.searchSeq
-      var extra = this.queryId ? { queryId: this.queryId } : {}
+      var extra = { signal: this.abortSignal() }
+      if (this.queryId) {
+        extra.queryId = this.queryId
+      }
       lineageClient
         .search(q, extra)
         .then(function (res) {
@@ -139,7 +205,7 @@ export default {
           }
         })
         .catch(function (err) {
-          if (seq !== self.searchSeq) {
+          if (seq !== self.searchSeq || isAbortError(err)) {
             return
           }
           self.hits = []
@@ -163,22 +229,36 @@ export default {
     },
     createQuery: function (seedId) {
       var self = this
+      this.cancelInFlight()
       this.error = ''
       this.notice = ''
       this.revision.reset()
+      var sentEpoch = this.revision.epoch()
       lineageClient
-        .createQuery(seedId)
+        .createQuery(seedId, null, { signal: this.abortSignal() })
         .then(function (res) {
+          if (sentEpoch !== self.revision.epoch()) {
+            return
+          }
           self.meta = res.meta
           self.stats = res.stats
           self.seed = res.seed
           self.childPages = {}
           self.expanded = {}
+          self.pins = []
+          self.candidateIds = []
+          self.viewNonce += 1
           var initialRev = 0
           if (res.projection && res.projection.clientRevision != null) {
             initialRev = res.projection.clientRevision
           }
-          self.applyProjection(res.projection, initialRev)
+          self.commitProjectionResult({
+            projection: res.projection,
+            sentRevision: initialRev,
+            sentEpoch: sentEpoch,
+            previousCandidates: [],
+            attemptedCandidates: []
+          })
           var sid = res.seed && res.seed.id
           if (sid) {
             self.$set(self.expanded, sid, true)
@@ -187,57 +267,95 @@ export default {
           }
         })
         .catch(function (err) {
+          if (isAbortError(err)) {
+            return
+          }
           self.error = (err && err.message) || '创建查询失败'
         })
     },
-    applyProjection: function (projection, sentRevision) {
-      if (!projection) {
-        return false
+    changeRoot: function () {
+      if (!this.canChangeRoot) {
+        return
       }
-      if (!this.revision.shouldApply(projection.clientRevision, sentRevision)) {
-        this.notice = '已丢弃过期 projection（revision ' + projection.clientRevision + '）'
-        return false
-      }
-      this.revision.adopt(projection.clientRevision)
-      this.projection = projection
-      this.index = indexProjection(projection)
-      this.candidateIds = mergeCandidateIds(
-        candidateIdsFromProjection(projection),
-        this.candidateIds,
-        this.seedId
-      )
-      return true
+      this.createQuery(this.selectedId)
     },
-    replaceProjection: function () {
-      var self = this
-      if (!this.queryId) {
-        return Promise.resolve()
+    commitProjectionResult: function (input) {
+      var outcome = resolveProjectionOutcome({
+        canvas: { projection: this.projection, index: this.index },
+        guard: this.revision,
+        sentRevision: input.sentRevision,
+        sentEpoch: input.sentEpoch,
+        projection: input.projection,
+        error: input.error,
+        previousCandidates: input.previousCandidates,
+        attemptedCandidates: input.attemptedCandidates,
+        seedId: this.seedId
+      })
+      if (outcome.aborted) {
+        return false
       }
+      if (outcome.applied && outcome.canvas) {
+        this.projection = outcome.canvas.projection
+        this.index = outcome.canvas.index
+      }
+      if (!outcome.stale) {
+        this.candidateIds = outcome.candidateIds
+      }
+      if (outcome.error) {
+        this.error = outcome.error
+      } else if (!outcome.stale) {
+        this.error = ''
+      }
+      if (outcome.notice) {
+        this.notice = outcome.notice
+      }
+      return outcome.applied
+    },
+    replaceProjection: function (opts) {
+      var self = this
+      opts = opts || {}
+      if (!this.queryId) {
+        return Promise.resolve(false)
+      }
+      var previousCandidates =
+        opts.previousCandidates || this.candidateIds.slice()
       var sent = this.revision.next()
-      var selected = this.selectedId || this.seedId
+      var sentEpoch = this.revision.epoch()
+      var selected = opts.selectedId || this.selectedId || this.seedId
       var body = {
         candidateIds: this.candidateIds.slice(),
         selectedId: selected,
         types: lineageClient.ALL_TYPES.slice(),
-        revealSelectedPath: false,
+        revealSelectedPath: !!opts.revealSelectedPath,
         clientRevision: sent
       }
       this.projectInFlight = true
       return lineageClient
-        .projection(this.queryId, body)
+        .projection(this.queryId, body, { signal: this.abortSignal() })
         .then(function (res) {
-          if (self.revision.isStale(sent) && !self.revision.shouldApply(res.clientRevision, sent)) {
-            return
-          }
-          self.applyProjection(res, sent)
+          return self.commitProjectionResult({
+            projection: res,
+            sentRevision: sent,
+            sentEpoch: sentEpoch,
+            previousCandidates: previousCandidates,
+            attemptedCandidates: body.candidateIds
+          })
         })
         .catch(function (err) {
-          if (!self.revision.isStale(sent)) {
-            self.error = (err && err.message) || '投影失败'
+          if (isAbortError(err)) {
+            return false
           }
+          return self.commitProjectionResult({
+            error: err,
+            sentRevision: sent,
+            sentEpoch: sentEpoch,
+            previousCandidates: previousCandidates,
+            attemptedCandidates: body.candidateIds
+          })
         })
-        .then(function () {
+        .then(function (applied) {
           self.projectInFlight = false
+          return applied
         })
     },
     toggleExpand: function (nodeId) {
@@ -257,11 +375,14 @@ export default {
         return
       }
       lineageClient
-        .children(this.queryId, nodeId, { limit: 50 })
+        .children(this.queryId, nodeId, { limit: 50, signal: this.abortSignal() })
         .then(function (page) {
           self.recordChildPage(nodeId, page, false)
         })
-        .catch(function () {
+        .catch(function (err) {
+          if (isAbortError(err)) {
+            return
+          }
           /* first-layer projection is enough if children fails */
         })
     },
@@ -271,7 +392,7 @@ export default {
         return
       }
       var pageState = this.childPages[nodeId] || {}
-      var extra = { limit: 50 }
+      var extra = { limit: 50, signal: this.abortSignal() }
       if (useCursor && pageState.nextCursor) {
         extra.cursor = pageState.nextCursor
       }
@@ -286,9 +407,20 @@ export default {
           var extraIds = ((page && page.items) || []).map(function (item) {
             return item.object && item.object.id
           })
+          var previousCandidates = self.candidateIds.slice()
           self.candidateIds = mergeCandidateIds(self.candidateIds, extraIds, self.seedId)
-          self.recordChildPage(nodeId, page, useCursor)
-          return self.replaceProjection()
+          return self.replaceProjection({ previousCandidates: previousCandidates }).then(function (ok) {
+            if (ok) {
+              self.recordChildPage(nodeId, page, useCursor)
+            } else {
+              self.candidateIds = previousCandidates
+              self.$set(
+                self.childPages,
+                nodeId,
+                Object.assign({}, pageState, { loading: false })
+              )
+            }
+          })
         })
         .catch(function (err) {
           self.$set(
@@ -296,6 +428,9 @@ export default {
             nodeId,
             Object.assign({}, self.childPages[nodeId] || {}, { loading: false })
           )
+          if (isAbortError(err)) {
+            return
+          }
           self.error = (err && err.message) || '加载子对象失败'
         })
     },
@@ -311,16 +446,36 @@ export default {
         append: append || prev.loaded
       })
     },
-    ensureCandidateAndSelect: function (id) {
+    ensureCandidateAndSelect: function (id, reveal) {
       var self = this
-      if (this.candidateIds.indexOf(id) === -1) {
-        this.candidateIds = mergeCandidateIds(this.candidateIds, [id], this.seedId)
-        this.replaceProjection().then(function () {
-          self.selectNode(id)
+      if (this.candidateIds.indexOf(id) === -1 || reveal) {
+        var previousCandidates = this.candidateIds.slice()
+        var previousPins = this.pins.slice()
+        this.pins = mergeCandidateIds(this.pins, [id], this.seedId)
+        this.candidateIds = mergeCandidateIds(this.candidateIds, this.pins, this.seedId)
+        var needReveal = !!reveal || !this.index.nodesById[id]
+        this.replaceProjection({
+          revealSelectedPath: needReveal,
+          selectedId: id,
+          previousCandidates: previousCandidates
+        }).then(function (ok) {
+          if (ok) {
+            self.selectNode(id)
+          } else {
+            self.pins = previousPins
+            self.candidateIds = previousCandidates
+          }
         })
         return
       }
       this.selectNode(id)
+    },
+    locateCross: function (edge) {
+      var other = otherEndpoint(edge, this.selectedId)
+      if (!other) {
+        return
+      }
+      this.ensureCandidateAndSelect(other, !this.index.nodesById[other])
     },
     selectNode: function (id) {
       var self = this
@@ -330,9 +485,10 @@ export default {
       }
       this.detailLoading = true
       var seq = ++this.detailSeq
+      var signal = this.abortSignal()
       Promise.all([
-        lineageClient.getNode(this.queryId, id),
-        lineageClient.relations(this.queryId, id, 'all', { limit: 50 })
+        lineageClient.getNode(this.queryId, id, { signal: signal }),
+        lineageClient.relations(this.queryId, id, 'all', { limit: 50, signal: signal })
       ])
         .then(function (pair) {
           if (seq !== self.detailSeq) {
@@ -342,7 +498,7 @@ export default {
           self.relations = (pair[1] && pair[1].items) || []
         })
         .catch(function (err) {
-          if (seq !== self.detailSeq) {
+          if (seq !== self.detailSeq || isAbortError(err)) {
             return
           }
           self.detail = null
@@ -504,19 +660,20 @@ button:disabled {
 
 .workspace {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(220px, 320px);
+  grid-template-columns: minmax(0, 1fr) minmax(200px, 260px) minmax(220px, 320px);
   gap: 12px;
   min-height: 280px;
 }
 
-@media (max-width: 720px) {
+@media (max-width: 960px) {
   .workspace {
     grid-template-columns: 1fr;
   }
 }
 
 .tree-panel,
-.detail-panel {
+.detail-panel,
+.cross-panel {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: rgba(255, 255, 255, 0.72);
@@ -683,5 +840,42 @@ button:disabled {
   list-style: none;
   margin: 0;
   padding: 0;
+}
+
+.ghost,
+.change-root {
+  height: 28px;
+  font-size: 0.8rem;
+}
+
+.detail-body .change-root {
+  margin: 10px 0 4px;
+}
+
+.cross-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.cross-item {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin: 6px 0;
+  font-size: 0.78rem;
+}
+
+.cross-item.incident {
+  background: rgba(154, 103, 0, 0.08);
+  border-radius: 4px;
+  padding: 4px;
+}
+
+.locate {
+  height: 24px;
+  padding: 0 8px;
+  font-size: 0.75rem;
 }
 </style>
