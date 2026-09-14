@@ -1,0 +1,3 @@
+# Design-gate Python deps (not application runtime).
+# python3 -m pip install --user -r tools/requirements.txt
+jsonschema==4.26.0

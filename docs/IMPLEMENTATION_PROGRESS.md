@@ -1,65 +1,69 @@
 # Implementation progress
 
-## Stage: P0 environment and empty stack
+## Stage: P0 dependency baseline, design gates, contract types
 
-**Goal:** empty Vue 2 embedded frontend and empty Spring Boot 2.7 / Java 8 API
-start locally. No real lineage data, no SSO, no production deploy.
+**Goal:** run existing design gates with captured evidence; record the
+toolchain actually used; generate OpenAPI client types into the Vue 2 app.
+No real lineage data, no SSO, no production deploy.
 
-**Baseline:** commit `4aefc3f` on `main`; work on `feat/p0-empty-stack`.
-Stack follows PM direction (Java 8 + Vue 2 embedded tool), not the HANDOFF
-React/TS + Java 21 / Spring Boot 4.1 default. Delta: [ADR 0001](adr/0001-java8-vue2-embedded-vs-handoff.md).
+**Baseline:** rebased onto `main@467c074` (after PR #2 merge); branch `feat/p0-dependency-baseline`.
+Stack remains Java 8 + Vue 2 embedded (ADR 0001). This stage does not revert
+to React / Java 21.
 
 ### Done
 
-- `apps/web`: Vue 2 (`vue@2`) empty iframe-friendly shell. Title **程序血缘地图**.
-  Scripts: `dev` / `build` / `preview` / `test` (placeholder). Bundler is Vite 4
-  + `vite-plugin-vue2` (not a Vite React template).
-- `apps/api`: Spring Boot **2.7.18**, Java 8 (source/target 1.8), Maven Wrapper
-  (`./mvnw`). Packages: `domain/graph`, `application`, `infrastructure`,
-  `interfaces`. `GET /api/health` → `{"status":"ok"}`.
-- Datasource placeholders in `application.yml` (`SPRING_DATASOURCE_*`).
-- Flyway on the classpath; **`spring.flyway.enabled=false`**; no business
-  migrations (choice: skip until PostgreSQL exists). JDBC/Flyway auto-config
-  excluded so the process is fail-soft without a database.
-- Root `.gitignore` for Java / Node / IDE / `.env`.
-- `docs/RUNBOOK.md`, `docs/DEPENDENCY_BASELINE.md`, ADR 0001.
+- Design gates run on this machine; stdout/stderr and exit codes stored under
+  [evidence/implementation/](../evidence/implementation/):
+  - `python3 tools/validate_design.py` → `exit_code: 0` (`validate_design.txt`)
+  - `node reference/open-design/program-lineage-handoff/spec/verify-tree.mjs` →
+    `exit_code: 0` (`verify_tree.txt`; `OK seed=ods.trade_order reach=10 tree=9 cross=3`)
+  - `node evidence/probe-reference.mjs` → `exit_code: 0` (`probe_reference.txt`)
+- [docs/DEPENDENCY_BASELINE.md](DEPENDENCY_BASELINE.md) records runtime
+  Vue 2 / Java 8 versions plus design-gate Python/jsonschema and the OpenAPI
+  client-gen toolchain (sources and reasons).
+- `apps/web`: `openapi-typescript@7.13.0` + `typescript@5.9.3` (dev only).
+  Script `generate:api` writes [apps/web/src/generated/openapi.d.ts](../apps/web/src/generated/openapi.d.ts)
+  from [spec/v1/openapi.json](../spec/v1/openapi.json). Generated file is
+  committed. Vue 2 application code is still JavaScript and does not call the
+  API yet.
+- `tools/requirements.txt` pins `jsonschema==4.26.0` for the design validator.
 
 ### Commands actually run (this machine)
 
-Environment: Node v22.23.2, npm 10.9.8, Temurin JDK 8u504-b01,
-`JAVA_HOME=/home/box/tools/jdk8u504-b01`. Maven Wrapper uses Apache Maven 3.9.16
-from Maven Central. Spring Boot parent `2.7.18` from Maven Central.
+Environment: Node v22.23.2, npm 10.9.8, Python 3.13.5, jsonschema 4.26.0
+(PyPI), Temurin JDK 8u504-b01 unused in this stage.
 
 ```text
-cd apps/web && npm install && npm run build
-# npm install: 126 packages (Vue 2.7.16 + vite-plugin-vue2 2.0.3 + Vite 4.5.14)
-# vite build: dist/index.html + assets, built in ~448ms
+python3 -m pip install --user jsonschema==4.26.0
+python3 tools/validate_design.py
+# status PASS; 14 openapiPaths; 32 schemas; exit 0
 
-cd apps/api && JAVA_HOME=/home/box/tools/jdk8u504-b01 ./mvnw -q -DskipTests package
-# compile + package with javac target 1.8
-# target/api-0.0.1-SNAPSHOT.jar
+node reference/open-design/program-lineage-handoff/spec/verify-tree.mjs
+# OK  seed=ods.trade_order  reach=10 tree=9 cross=3; exit 0
 
-JAVA_HOME=/home/box/tools/jdk8u504-b01 ./mvnw -q test
-# contextLoads, healthReturnsOkWithoutDatabase
+node evidence/probe-reference.mjs
+# JSON probe report; fixtureCounts nodes=17 edges=18; exit 0
 
-java -jar target/api-0.0.1-SNAPSHOT.jar   # no SPRING_DATASOURCE_* set
-curl http://localhost:8080/api/health      # {"status":"ok"}
-curl http://localhost:8080/actuator/health # {"status":"UP"}
+cd apps/web && npm install && npm run generate:api
+# openapi-typescript 7.13.0
+# ../../spec/v1/openapi.json → src/generated/openapi.d.ts
 ```
+
+Gates were not lowered. Failures would have been recorded as-is.
 
 ### Gaps / blocked
 
-- **PostgreSQL 17 / `deploy/`** — delivered on SRE branch `feat/p0-local-pg-deploy`
-  (see section below). API health still does not require the database until P2.
+- **PostgreSQL 17 / `deploy/`** — merged via PR #2 (see SRE section below). API health still does not require the database until P2. Agent host remains template-only without Docker.
 - No real SSO / OIDC.
 - No real lineage import or graph algorithm (P1+).
-- Frontend has no graph canvas yet.
-- Contract client types from OpenAPI may land in a follow-up Engineer PR.
+- Frontend has no graph canvas yet. Generated types are unused at runtime until P3+.
+- Empty-stack start commands still apply (`docs/RUNBOOK.md`); this stage did not re-package the API.
 
 ### Next
 
-P1 domain algorithm against `fixtures/v1` expected output; P2 Flyway from
-`spec/v1/storage.sql` once PG is available.
+P1 domain algorithm against `fixtures/v1` expected output (authorization-after
+BFS, Java truncation, parent/tree/cross). P2 Flyway from `spec/v1/storage.sql`
+once PG is available. Do not treat fixtures as real lineage.
 
 ---
 
@@ -109,3 +113,10 @@ docker compose -f deploy/docker-compose.yml down -v
 - 真实 SSO、企业 OIDC、生产凭证与主机
 - 真实血缘数据
 - Flyway 正式迁移与 API 连库验收（P2）
+
+## Previous stage: P0 environment and empty stack
+
+Empty Vue 2 embedded frontend and empty Spring Boot 2.7 / Java 8 API start
+locally. See git history on `feat/p0-empty-stack` / PR #1. Stack follows PM
+direction, not the HANDOFF React/TS + Java 21 default.
+[ADR 0001](adr/0001-java8-vue2-embedded-vs-handoff.md).

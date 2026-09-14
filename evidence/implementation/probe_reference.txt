@@ -1,0 +1,229 @@
+command: node evidence/probe-reference.mjs
+cwd: /workspace/DatabaseRelationMap
+started: 2026-09-14T11:21:03Z
+----- stdout+stderr -----
+{
+  "parallelRelations": {
+    "reach": [
+      "r",
+      "a"
+    ],
+    "rank": {
+      "r": 0,
+      "a": 1
+    },
+    "parent": {
+      "a": "r"
+    },
+    "tree": [
+      {
+        "from": "r",
+        "to": "a",
+        "rel": "reads"
+      },
+      {
+        "from": "r",
+        "to": "a",
+        "rel": "derives"
+      }
+    ],
+    "cross": [],
+    "children": {
+      "r": [
+        "a",
+        "a"
+      ]
+    }
+  },
+  "selfLoop": {
+    "reach": [
+      "r",
+      "a",
+      "b"
+    ],
+    "rank": {
+      "r": 0,
+      "a": 1,
+      "b": 1
+    },
+    "parent": {
+      "a": "r"
+    },
+    "tree": [
+      {
+        "from": "r",
+        "to": "a",
+        "rel": "reads"
+      }
+    ],
+    "cross": [
+      {
+        "from": "a",
+        "to": "b",
+        "rel": "reads"
+      }
+    ],
+    "children": {
+      "r": [
+        "a"
+      ]
+    }
+  },
+  "cycleWithTail": {
+    "reach": [
+      "r",
+      "a",
+      "b",
+      "c"
+    ],
+    "rank": {
+      "r": 0,
+      "a": 1,
+      "b": 1,
+      "c": 1
+    },
+    "parent": {
+      "a": "r"
+    },
+    "tree": [
+      {
+        "from": "r",
+        "to": "a",
+        "rel": "reads"
+      }
+    ],
+    "cross": [
+      {
+        "from": "a",
+        "to": "b",
+        "rel": "reads"
+      },
+      {
+        "from": "b",
+        "to": "a",
+        "rel": "reads"
+      },
+      {
+        "from": "b",
+        "to": "c",
+        "rel": "reads"
+      }
+    ],
+    "children": {
+      "r": [
+        "a"
+      ]
+    }
+  },
+  "tieOrder1": {
+    "reach": [
+      "r",
+      "a",
+      "b",
+      "z"
+    ],
+    "rank": {
+      "r": 0,
+      "a": 1,
+      "b": 1,
+      "z": 2
+    },
+    "parent": {
+      "a": "r",
+      "b": "r",
+      "z": "a"
+    },
+    "tree": [
+      {
+        "from": "r",
+        "to": "a",
+        "rel": "reads"
+      },
+      {
+        "from": "r",
+        "to": "b",
+        "rel": "reads"
+      },
+      {
+        "from": "a",
+        "to": "z",
+        "rel": "reads"
+      }
+    ],
+    "cross": [
+      {
+        "from": "b",
+        "to": "z",
+        "rel": "reads"
+      }
+    ],
+    "children": {
+      "r": [
+        "a",
+        "b"
+      ],
+      "a": [
+        "z"
+      ]
+    }
+  },
+  "tieOrder2": {
+    "reach": [
+      "r",
+      "b",
+      "a",
+      "z"
+    ],
+    "rank": {
+      "r": 0,
+      "b": 1,
+      "a": 1,
+      "z": 2
+    },
+    "parent": {
+      "b": "r",
+      "a": "r",
+      "z": "b"
+    },
+    "tree": [
+      {
+        "from": "r",
+        "to": "b",
+        "rel": "reads"
+      },
+      {
+        "from": "r",
+        "to": "a",
+        "rel": "reads"
+      },
+      {
+        "from": "b",
+        "to": "z",
+        "rel": "reads"
+      }
+    ],
+    "cross": [
+      {
+        "from": "a",
+        "to": "z",
+        "rel": "reads"
+      }
+    ],
+    "children": {
+      "r": [
+        "b",
+        "a"
+      ],
+      "b": [
+        "z"
+      ]
+    }
+  },
+  "fixtureCounts": {
+    "nodes": 17,
+    "edges": 18
+  }
+}
+----- end -----
+exit_code: 0
+finished: 2026-09-14T11:21:03Z
