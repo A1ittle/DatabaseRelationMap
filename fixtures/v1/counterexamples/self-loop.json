@@ -1,0 +1,24 @@
+{
+  "id": "self-loop",
+  "title": "Self-loop is removed before indegree; it is not a parent; successor still ranks",
+  "seedId": "seed",
+  "authorizedObjectIds": ["seed", "child"],
+  "objects": [
+    {"id": "seed", "type": "table", "technicalName": "seed", "javaKind": null},
+    {"id": "child", "type": "table", "technicalName": "child", "javaKind": null}
+  ],
+  "relations": [
+    {"id": "e-loop", "source": "seed", "target": "seed", "rel": "reads", "sourceOrder": 0},
+    {"id": "e-seed-child", "source": "seed", "target": "child", "rel": "writes", "sourceOrder": 0}
+  ],
+  "expected": {
+    "treeStatus": "available",
+    "reach": ["seed", "child"],
+    "minHops": {"seed": 0, "child": 1},
+    "layoutRank": {"seed": 0, "child": 1},
+    "parentEdgeIds": {"child": "e-seed-child"},
+    "treeIds": ["e-seed-child"],
+    "crossIds": [],
+    "excludedRelationIds": ["e-loop"]
+  }
+}

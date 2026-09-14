@@ -1,0 +1,38 @@
+{
+  "id": "cycle-tail",
+  "title": "Directed cycle is not force-rewired into a fake tree; tail remains reachable",
+  "seedId": "seed",
+  "authorizedObjectIds": ["seed", "a", "b", "tail"],
+  "objects": [
+    {"id": "seed", "type": "table", "technicalName": "seed", "javaKind": null},
+    {"id": "a", "type": "view", "technicalName": "a", "javaKind": null},
+    {"id": "b", "type": "procedure", "technicalName": "b", "javaKind": null},
+    {"id": "tail", "type": "table", "technicalName": "tail", "javaKind": null}
+  ],
+  "relations": [
+    {"id": "e-seed-a", "source": "seed", "target": "a", "rel": "reads", "sourceOrder": 0},
+    {"id": "e-a-b", "source": "a", "target": "b", "rel": "reads", "sourceOrder": 0},
+    {"id": "e-b-a", "source": "b", "target": "a", "rel": "writes", "sourceOrder": 0},
+    {"id": "e-b-tail", "source": "b", "target": "tail", "rel": "writes", "sourceOrder": 0}
+  ],
+  "expected": {
+    "treeStatus": "unavailable_cycle",
+    "reach": ["seed", "a", "b", "tail"],
+    "minHops": {"seed": 0, "a": 1, "b": 2, "tail": 3},
+    "layoutRank": {},
+    "parentEdgeIds": {},
+    "treeIds": [],
+    "crossIds": [],
+    "excludedRelationIds": []
+  },
+  "pathQueries": [
+    {
+      "from": "seed",
+      "to": "tail",
+      "status": "found",
+      "reason": null,
+      "nodeIds": ["seed", "a", "b", "tail"],
+      "edgeIds": ["e-seed-a", "e-a-b", "e-b-tail"]
+    }
+  ]
+}

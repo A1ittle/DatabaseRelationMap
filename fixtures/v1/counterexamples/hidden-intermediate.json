@@ -1,0 +1,39 @@
+{
+  "id": "hidden-intermediate",
+  "title": "Denied intermediate is not walked; authorized tail is not spliced onto the seed",
+  "seedId": "seed",
+  "authorizedObjectIds": ["seed", "visible", "tail"],
+  "objects": [
+    {"id": "seed", "type": "table", "technicalName": "seed", "javaKind": null},
+    {"id": "hidden", "type": "view", "technicalName": "hidden", "javaKind": null},
+    {"id": "tail", "type": "table", "technicalName": "tail", "javaKind": null},
+    {"id": "visible", "type": "view", "technicalName": "visible", "javaKind": null}
+  ],
+  "relations": [
+    {"id": "e-seed-hidden", "source": "seed", "target": "hidden", "rel": "reads", "sourceOrder": 0},
+    {"id": "e-hidden-tail", "source": "hidden", "target": "tail", "rel": "writes", "sourceOrder": 0},
+    {"id": "e-seed-visible", "source": "seed", "target": "visible", "rel": "reads", "sourceOrder": 0}
+  ],
+  "expected": {
+    "treeStatus": "available",
+    "reach": ["seed", "visible"],
+    "minHops": {"seed": 0, "visible": 1},
+    "layoutRank": {"seed": 0, "visible": 1},
+    "parentEdgeIds": {"visible": "e-seed-visible"},
+    "treeIds": ["e-seed-visible"],
+    "crossIds": [],
+    "excludedRelationIds": []
+  },
+  "mustNotReach": ["hidden", "tail"],
+  "mustNotClassifyRelationIds": ["e-seed-hidden", "e-hidden-tail"],
+  "pathQueries": [
+    {
+      "from": "seed",
+      "to": "tail",
+      "status": "not_found",
+      "reason": null,
+      "nodeIds": [],
+      "edgeIds": []
+    }
+  ]
+}

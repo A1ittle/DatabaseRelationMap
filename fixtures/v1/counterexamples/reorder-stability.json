@@ -1,0 +1,32 @@
+{
+  "id": "reorder-stability",
+  "title": "Diamond: join parent is the writes edge from left, independent of array order",
+  "seedId": "seed",
+  "authorizedObjectIds": ["seed", "left", "right", "join"],
+  "objects": [
+    {"id": "seed", "type": "table", "technicalName": "seed", "javaKind": null},
+    {"id": "left", "type": "view", "technicalName": "left", "javaKind": null},
+    {"id": "right", "type": "view", "technicalName": "right", "javaKind": null},
+    {"id": "join", "type": "table", "technicalName": "join", "javaKind": null}
+  ],
+  "relations": [
+    {"id": "e-seed-left", "source": "seed", "target": "left", "rel": "derives", "sourceOrder": 0},
+    {"id": "e-seed-right", "source": "seed", "target": "right", "rel": "reads", "sourceOrder": 0},
+    {"id": "e-left-join", "source": "left", "target": "join", "rel": "writes", "sourceOrder": 0},
+    {"id": "e-right-join", "source": "right", "target": "join", "rel": "reads", "sourceOrder": 0}
+  ],
+  "expected": {
+    "treeStatus": "available",
+    "reach": ["seed", "left", "right", "join"],
+    "minHops": {"seed": 0, "left": 1, "right": 1, "join": 2},
+    "layoutRank": {"seed": 0, "left": 1, "right": 1, "join": 2},
+    "parentEdgeIds": {
+      "left": "e-seed-left",
+      "right": "e-seed-right",
+      "join": "e-left-join"
+    },
+    "treeIds": ["e-seed-left", "e-seed-right", "e-left-join"],
+    "crossIds": ["e-right-join"],
+    "excludedRelationIds": []
+  }
+}

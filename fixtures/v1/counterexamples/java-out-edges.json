@@ -1,0 +1,31 @@
+{
+  "id": "java-out-edges",
+  "title": "Java is reachable; its writes-out edge is not traversed; the fact id is retained",
+  "seedId": "seed",
+  "authorizedObjectIds": ["seed", "java-j", "leaked", "other"],
+  "objects": [
+    {"id": "seed", "type": "table", "technicalName": "seed", "javaKind": null},
+    {"id": "java-j", "type": "java", "technicalName": "java-j", "javaKind": "class"},
+    {"id": "leaked", "type": "table", "technicalName": "leaked", "javaKind": null},
+    {"id": "other", "type": "view", "technicalName": "other", "javaKind": null}
+  ],
+  "relations": [
+    {"id": "e-seed-java", "source": "seed", "target": "java-j", "rel": "reads", "sourceOrder": 0},
+    {"id": "e-java-leaked", "source": "java-j", "target": "leaked", "rel": "writes", "sourceOrder": 0},
+    {"id": "e-seed-other", "source": "seed", "target": "other", "rel": "reads", "sourceOrder": 0}
+  ],
+  "expected": {
+    "treeStatus": "available",
+    "reach": ["seed", "java-j", "other"],
+    "minHops": {"seed": 0, "java-j": 1, "other": 1},
+    "layoutRank": {"seed": 0, "java-j": 1, "other": 1},
+    "parentEdgeIds": {
+      "java-j": "e-seed-java",
+      "other": "e-seed-other"
+    },
+    "treeIds": ["e-seed-java", "e-seed-other"],
+    "crossIds": [],
+    "excludedRelationIds": ["e-java-leaked"],
+    "factsRetainRelationIds": ["e-seed-java", "e-java-leaked", "e-seed-other"]
+  }
+}

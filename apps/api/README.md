@@ -9,6 +9,13 @@ curl http://localhost:8080/api/health
 # {"status":"ok"}
 ```
 
+P1 graph counterexamples (TDD, currently red on the stub façade):
+
+```bash
+JAVA_HOME=/home/box/tools/jdk8u504-b01 ./mvnw test
+# P1CounterexampleSuiteTest is expected to fail until BFS/classify/path is implemented.
+```
+
 Datasource is read from `SPRING_DATASOURCE_URL` / `USERNAME` / `PASSWORD`.
 JDBC and Flyway auto-configuration is excluded in P0 so the process starts
 without PostgreSQL. Flyway remains on the classpath (`spring.flyway.enabled=false`);
