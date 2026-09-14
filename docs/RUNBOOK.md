@@ -54,9 +54,28 @@ Live migrate against disposable PG 17 (Docker required):
 ./deploy/scripts/migrate-verify.sh
 ```
 
-**BLOCKED on hosts without Docker** (this agent host included). The script prints
-the SRE recipe and exits 1. See [`deploy/README.md`](../deploy/README.md) and
-[`deploy/RUNBOOK.md`](../deploy/RUNBOOK.md). Never commit `deploy/.env`.
+See [`deploy/README.md`](../deploy/README.md) and [`deploy/RUNBOOK.md`](../deploy/RUNBOOK.md).
+Never commit `deploy/.env`.
+
+### Import / CAS publish (P2)
+
+Default `lineage.security.mode=open` — no OIDC (later task). POST `/api/imports`
+and `/api/imports/{runId}/publish` require a non-empty `X-CSRF-Token` (any value
+in open mode). Optional `LINEAGE_SECURITY_MODE=demo-header` plus
+`X-Lineage-Demo-User`.
+
+```bash
+# PostgreSQL from deploy/, then API with SPRING_DATASOURCE_URL set
+curl -sS -H 'Content-Type: application/json' -H 'X-CSRF-Token: demo' \
+  --data-binary @fixtures/v1/import.json http://localhost:8080/api/imports
+curl -sS http://localhost:8080/api/imports/{runId}
+curl -sS -H 'Content-Type: application/json' -H 'X-CSRF-Token: demo' \
+  --data '{"expectedActiveSnapshotId":null}' \
+  http://localhost:8080/api/imports/{runId}/publish
+```
+
+JDBC integration tests (`ImportPublishJdbcTest`) bring up `deploy/` compose and
+use real PostgreSQL. `./mvnw test` from `apps/api` with JDK 8.
 
 ## Design checks (already in repo)
 
