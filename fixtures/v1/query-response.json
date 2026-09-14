@@ -1,0 +1,145 @@
+{
+  "meta": {
+    "requestId": "request-demo",
+    "queryId": "query-demo",
+    "snapshotId": "snapshot-demo",
+    "coverage": "complete",
+    "computationStatus": "complete",
+    "treeStatus": "available",
+    "algorithmVersion": "lineage-tree-v1",
+    "expiresAt": "2026-09-14T01:00:00Z"
+  },
+  "seed": {
+    "id": "root",
+    "type": "table",
+    "namespace": "demo/prod/core",
+    "technicalName": "root",
+    "displayName": "root",
+    "system": "demo",
+    "owner": null,
+    "javaKind": null
+  },
+  "stats": {
+    "downstream": 5,
+    "javaTerminals": 1,
+    "leaves": 1,
+    "crossEdges": 4,
+    "byType": {
+      "table": 1,
+      "view": 1,
+      "procedure": 2,
+      "java": 1
+    },
+    "countStatus": "exact"
+  },
+  "projection": {
+    "meta": {
+      "requestId": "request-demo",
+      "queryId": "query-demo",
+      "snapshotId": "snapshot-demo",
+      "coverage": "complete",
+      "computationStatus": "complete",
+      "treeStatus": "available",
+      "algorithmVersion": "lineage-tree-v1",
+      "expiresAt": "2026-09-14T01:00:00Z"
+    },
+    "clientRevision": 0,
+    "nodes": [
+      {
+        "object": {
+          "id": "root",
+          "type": "table",
+          "namespace": "demo/prod/core",
+          "technicalName": "root",
+          "displayName": "root",
+          "system": "demo",
+          "owner": null,
+          "javaKind": null
+        },
+        "minHops": 0,
+        "layoutRank": 0,
+        "parentEdgeId": null,
+        "treeChildCount": 2,
+        "crossCount": 2
+      },
+      {
+        "object": {
+          "id": "view-a",
+          "type": "view",
+          "namespace": "demo/prod/core",
+          "technicalName": "view-a",
+          "displayName": "view-a",
+          "system": "demo",
+          "owner": null,
+          "javaKind": null
+        },
+        "minHops": 1,
+        "layoutRank": 1,
+        "parentEdgeId": "e02",
+        "treeChildCount": 1,
+        "crossCount": 2
+      },
+      {
+        "object": {
+          "id": "proc-s",
+          "type": "procedure",
+          "namespace": "demo/prod/core",
+          "technicalName": "proc-s",
+          "displayName": "proc-s",
+          "system": "demo",
+          "owner": null,
+          "javaKind": null
+        },
+        "minHops": 1,
+        "layoutRank": 1,
+        "parentEdgeId": "e10",
+        "treeChildCount": 0,
+        "crossCount": 1
+      }
+    ],
+    "edges": [
+      {
+        "relation": {
+          "id": "e01",
+          "source": "root",
+          "target": "view-a",
+          "rel": "reads",
+          "sourceOrder": 0,
+          "evidenceIds": [
+            "ev-demo"
+          ]
+        },
+        "kind": "cross"
+      },
+      {
+        "relation": {
+          "id": "e02",
+          "source": "root",
+          "target": "view-a",
+          "rel": "derives",
+          "sourceOrder": 0,
+          "evidenceIds": [
+            "ev-demo"
+          ]
+        },
+        "kind": "tree"
+      },
+      {
+        "relation": {
+          "id": "e10",
+          "source": "root",
+          "target": "proc-s",
+          "rel": "reads",
+          "sourceOrder": 0,
+          "evidenceIds": [
+            "ev-demo"
+          ]
+        },
+        "kind": "tree"
+      }
+    ],
+    "matchedDownstream": 5,
+    "renderLimited": false,
+    "reasons": []
+  }
+}

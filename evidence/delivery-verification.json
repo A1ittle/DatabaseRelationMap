@@ -1,0 +1,32 @@
+{
+  "verifiedAt": "2026-09-14T10:43:27.564432+08:00",
+  "copiedFileCount": 24,
+  "copyHashErrors": [],
+  "sourceDriftSinceCapture": [
+    "lineage-map-v2.html",
+    "program-lineage-handoff/MANIFEST.txt",
+    "program-lineage-handoff/README.md",
+    "program-lineage-handoff/docs/07-visual.md",
+    "program-lineage-handoff/docs/08-engineering.md",
+    "program-lineage-handoff/handbook.html",
+    "program-lineage-handoff/prototype/README.md",
+    "program-lineage-handoff/prototype/lineage-map-v2.html",
+    "program-lineage-handoff/spec/tokens.css"
+  ],
+  "designDocumentCount": 6,
+  "documentLinkOrFenceErrors": [],
+  "originalRegression": {
+    "exitCode": 0,
+    "stdout": "OK  seed=ods.trade_order  reach=10 tree=9 cross=3",
+    "stderr": ""
+  },
+  "boundaryProbesReproduced": true,
+  "limitations": [
+    "No production implementation",
+    "No real input validation",
+    "No full UI acceptance",
+    "No performance benchmark",
+    "No OpenAPI validator run"
+  ],
+  "sourceDriftReview": "Reviewed: offline CSS, fallback colors and documentation; prototype script differs only in SVG arrow fill color. Added reference/offline-style-update, original snapshot preserved."
+}

@@ -1,0 +1,47 @@
+{
+  "seed": "ods.trade_order",
+  "notInTree": [
+    "core.t_order",
+    "sp_sync",
+    "ods.pay_log",
+    "stg.user_account",
+    "OrderIngestJob",
+    "dim.merchant",
+    "v_active_merchant"
+  ],
+  "nodes": [
+    { "id": "ods.trade_order", "rank": 0, "parent": null, "rel": null },
+    { "id": "OrderRiskEngine", "rank": 1, "parent": "ods.trade_order", "rel": "reads" },
+    { "id": "sp_risk", "rank": 1, "parent": "ods.trade_order", "rel": "reads" },
+    { "id": "v_order_enriched", "rank": 1, "parent": "ods.trade_order", "rel": "reads" },
+    { "id": "dwd.fact_order", "rank": 2, "parent": "v_order_enriched", "rel": "derives" },
+    { "id": "risk.order_score", "rank": 2, "parent": "sp_risk", "rel": "writes" },
+    { "id": "sp_mart", "rank": 3, "parent": "dwd.fact_order", "rel": "reads" },
+    { "id": "v_risk_daily", "rank": 3, "parent": "dwd.fact_order", "rel": "reads" },
+    { "id": "ads.merchant_gmv", "rank": 4, "parent": "sp_mart", "rel": "writes" },
+    { "id": "GmvReportService", "rank": 5, "parent": "ads.merchant_gmv", "rel": "reads" }
+  ],
+  "tree": [
+    { "from": "ods.trade_order", "to": "v_order_enriched", "rel": "reads" },
+    { "from": "v_order_enriched", "to": "dwd.fact_order", "rel": "derives" },
+    { "from": "dwd.fact_order", "to": "sp_mart", "rel": "reads" },
+    { "from": "sp_mart", "to": "ads.merchant_gmv", "rel": "writes" },
+    { "from": "ads.merchant_gmv", "to": "GmvReportService", "rel": "reads" },
+    { "from": "ods.trade_order", "to": "sp_risk", "rel": "reads" },
+    { "from": "sp_risk", "to": "risk.order_score", "rel": "writes" },
+    { "from": "dwd.fact_order", "to": "v_risk_daily", "rel": "reads" },
+    { "from": "ods.trade_order", "to": "OrderRiskEngine", "rel": "reads" }
+  ],
+  "cross": [
+    { "from": "v_order_enriched", "to": "GmvReportService", "rel": "reads" },
+    { "from": "ods.trade_order", "to": "v_risk_daily", "rel": "reads" },
+    { "from": "risk.order_score", "to": "v_risk_daily", "rel": "reads" }
+  ],
+  "shortestPathToGmv": {
+    "path": ["ods.trade_order", "v_order_enriched", "GmvReportService"],
+    "edges": [
+      { "from": "ods.trade_order", "to": "v_order_enriched", "rel": "reads", "kind": "tree" },
+      { "from": "v_order_enriched", "to": "GmvReportService", "rel": "reads", "kind": "cross" }
+    ]
+  }
+}

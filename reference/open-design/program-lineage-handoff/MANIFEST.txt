@@ -1,0 +1,26 @@
+program-lineage-handoff/
+  README.md
+  LOCKED-RULES.md
+  MANIFEST.txt
+  handbook.html
+  docs/
+    01-overview.md
+    02-domain.md
+    03-api.md
+    04-tree-algorithm.md
+    05-views-and-state.md
+    06-interaction.md
+    07-visual.md
+    08-engineering.md
+  spec/
+    types.ts
+    openapi.yaml
+    tokens.css
+    build-tree.mjs
+    verify-tree.mjs
+  fixtures/
+    small-graph.json
+    seed-ods-trade-order.expected.json
+  prototype/
+    README.md
+    lineage-map-v2.html

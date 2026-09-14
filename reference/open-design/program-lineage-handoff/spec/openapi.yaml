@@ -1,0 +1,281 @@
+openapi: 3.1.0
+info:
+  title: 程序血缘地图 API
+  version: 1.0.0
+  description: |
+    语义对齐 prototype/lineage-map-v2.html。
+    主依赖 / 跨支必须由服务端计算。第一期 direction 仅 downstream。
+servers:
+  - url: /api
+paths:
+  /lineage:
+    get:
+      summary: 当前表的下游树
+      parameters:
+        - in: query
+          name: seed
+          required: true
+          schema: { type: string }
+        - in: query
+          name: direction
+          schema: { type: string, enum: [downstream], default: downstream }
+        - in: query
+          name: depth
+          schema: { oneOf: [{ type: integer, enum: [1, 2] }, { type: string, enum: [all] }], default: 1 }
+        - in: query
+          name: types
+          schema: { type: string }
+          description: table,view,procedure,java
+        - in: query
+          name: expand
+          schema: { type: string }
+          description: 逗号分隔的已展开节点 id
+        - in: query
+          name: view
+          schema: { type: string, enum: [focus, overview, impact, path] }
+      responses:
+        "200":
+          description: 下游树
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LineageResponse" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+        "409": { $ref: "#/components/responses/Error" }
+  /lineage/children:
+    get:
+      summary: 懒展开某个节点的树子节点
+      parameters:
+        - in: query
+          name: seed
+          required: true
+          schema: { type: string }
+        - in: query
+          name: id
+          required: true
+          schema: { type: string }
+        - in: query
+          name: types
+          schema: { type: string }
+      responses:
+        "200":
+          description: 增量节点与边
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ChildrenResponse" }
+  /lineage/search:
+    get:
+      summary: 搜索对象
+      parameters:
+        - in: query
+          name: q
+          required: true
+          schema: { type: string }
+        - in: query
+          name: seed
+          schema: { type: string }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 10, maximum: 20 }
+      responses:
+        "200":
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SearchResponse" }
+  /lineage/nodes/{id}:
+    get:
+      summary: 对象详情
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+        - in: query
+          name: seed
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/NodeDetail" }
+  /lineage/path:
+    get:
+      summary: 下游最短路径
+      parameters:
+        - in: query
+          name: from
+          required: true
+          schema: { type: string }
+        - in: query
+          name: to
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PathResponse" }
+components:
+  responses:
+    Error:
+      description: 错误
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+  schemas:
+    NodeType:
+      type: string
+      enum: [table, view, procedure, java]
+    Rel:
+      type: string
+      enum: [reads, writes, calls, derives]
+    EdgeKind:
+      type: string
+      enum: [tree, cross]
+    Node:
+      type: object
+      required: [id, name, title, type, owner, system, status]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        title: { type: string }
+        type: { $ref: "#/components/schemas/NodeType" }
+        owner: { type: string }
+        system: { type: string }
+        status: { type: string, enum: [verified, inferred] }
+        desc: { type: string }
+    LineageNode:
+      allOf:
+        - $ref: "#/components/schemas/Node"
+        - type: object
+          properties:
+            childCount: { type: integer }
+            crossCount: { type: integer }
+            hasMore: { type: boolean }
+    ClassifiedEdge:
+      type: object
+      required: [from, to, rel, kind]
+      properties:
+        from: { type: string }
+        to: { type: string }
+        rel: { $ref: "#/components/schemas/Rel" }
+        kind: { $ref: "#/components/schemas/EdgeKind" }
+    LineageResponse:
+      type: object
+      required: [seed, stats, nodes, tree, cross, rank, parent, truncated]
+      properties:
+        seed: { $ref: "#/components/schemas/Node" }
+        stats:
+          type: object
+          required: [downstream, leaves, crossCount, byType]
+          properties:
+            downstream: { type: integer }
+            leaves: { type: integer }
+            crossCount: { type: integer }
+            byType:
+              type: object
+              additionalProperties: { type: integer }
+        nodes:
+          type: array
+          items: { $ref: "#/components/schemas/LineageNode" }
+        tree:
+          type: array
+          items: { $ref: "#/components/schemas/ClassifiedEdge" }
+        cross:
+          type: array
+          items: { $ref: "#/components/schemas/ClassifiedEdge" }
+        rank:
+          type: object
+          additionalProperties: { type: integer }
+        parent:
+          type: object
+          additionalProperties: { type: string }
+        truncated: { type: boolean }
+    ChildrenResponse:
+      type: object
+      required: [id, nodes, tree, cross]
+      properties:
+        id: { type: string }
+        nodes:
+          type: array
+          items: { $ref: "#/components/schemas/LineageNode" }
+        tree:
+          type: array
+          items: { $ref: "#/components/schemas/ClassifiedEdge" }
+        cross:
+          type: array
+          items: { $ref: "#/components/schemas/ClassifiedEdge" }
+    SearchHit:
+      type: object
+      required: [id, name, title, type, owner, inDownstream]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        title: { type: string }
+        type: { $ref: "#/components/schemas/NodeType" }
+        owner: { type: string }
+        inDownstream: { type: boolean }
+    SearchResponse:
+      type: object
+      required: [query, items]
+      properties:
+        query: { type: string }
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/SearchHit" }
+    RelItem:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        title: { type: string }
+        type: { $ref: "#/components/schemas/NodeType" }
+        rel: { $ref: "#/components/schemas/Rel" }
+        kind: { $ref: "#/components/schemas/EdgeKind" }
+    NodeDetail:
+      allOf:
+        - $ref: "#/components/schemas/Node"
+        - type: object
+          properties:
+            hop: { type: integer }
+            parentId: { type: string, nullable: true }
+            canSetAsRoot: { type: boolean }
+            treeIn:
+              type: array
+              items: { $ref: "#/components/schemas/RelItem" }
+            treeOut:
+              type: array
+              items: { $ref: "#/components/schemas/RelItem" }
+            cross:
+              type: array
+              items: { $ref: "#/components/schemas/RelItem" }
+    PathResponse:
+      type: object
+      required: [from, to, found]
+      properties:
+        from: { type: string }
+        to: { type: string }
+        found: { type: boolean }
+        nodes:
+          type: array
+          items: { $ref: "#/components/schemas/Node" }
+        edges:
+          type: array
+          items: { $ref: "#/components/schemas/ClassifiedEdge" }
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          enum:
+            - INVALID_SEED
+            - UNAUTHENTICATED
+            - FORBIDDEN
+            - SEED_NOT_FOUND
+            - LINEAGE_NOT_COLLECTED
+            - INTERNAL
+        message: { type: string }

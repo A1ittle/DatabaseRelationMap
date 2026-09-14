@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>程序血缘地图 · 开发交接手册</title>
+  <style>
+    :root {
+      --bg: oklch(98% 0.005 250);
+      --surface: oklch(100% 0 0);
+      --fg: oklch(22% 0.02 240);
+      --muted: oklch(42% 0.02 240);
+      --border: oklch(90% 0.008 240);
+      --accent: oklch(58% 0.16 145);
+      --table: oklch(38% 0.04 250);
+      --view: oklch(38% 0.07 200);
+      --proc: oklch(40% 0.09 75);
+      --java: oklch(36% 0.06 280);
+      --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      --font-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+      --radius: 6px;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0; background: var(--bg); color: var(--fg);
+      font: 15px/1.75 var(--font-body);
+    }
+    a { color: var(--fg); }
+    a:focus-visible, button:focus-visible {
+      outline: 2px solid var(--fg); outline-offset: 2px;
+    }
+    .wrap {
+      display: grid; grid-template-columns: 220px minmax(0, 1fr);
+      min-height: 100dvh;
+    }
+    nav {
+      position: sticky; top: 0; height: 100dvh; overflow: auto;
+      padding: 24px 16px; border-right: 1px solid var(--border);
+      background: var(--surface);
+    }
+    nav p { margin: 0 0 16px; font-size: 12px; color: var(--muted); letter-spacing: 0.02em; }
+    nav a {
+      display: block; padding: 6px 8px; text-decoration: none;
+      font-size: 13px; border-radius: var(--radius);
+    }
+    nav a:hover { background: oklch(96% 0.006 250); }
+    main { padding: 32px 40px 80px; max-width: 880px; }
+    .kicker { margin: 0; font-size: 12px; color: var(--muted); letter-spacing: 0.06em; }
+    h1 { margin: 6px 0 12px; font-size: 28px; line-height: 1.35; font-weight: 600; }
+    h2 { margin: 40px 0 12px; font-size: 20px; line-height: 1.35; font-weight: 600; }
+    h3 { margin: 24px 0 8px; font-size: 16px; line-height: 1.4; font-weight: 600; }
+    p { max-width: 72ch; }
+    .lead { font-size: 16px; }
+    table {
+      width: 100%; border-collapse: collapse; font-size: 13px;
+      background: var(--surface); margin: 12px 0 20px;
+    }
+    th, td {
+      border: 1px solid var(--border); padding: 8px 10px; text-align: left;
+      vertical-align: top;
+    }
+    th { font-weight: 510; background: var(--bg); letter-spacing: 0.02em; }
+    code, kbd, .mono {
+      font-family: var(--font-mono); font-size: 12px;
+    }
+    pre {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 14px 16px; overflow: auto;
+      font-family: var(--font-mono); font-size: 12px; line-height: 1.55;
+    }
+    .callout {
+      border: 1px solid var(--border); background: var(--surface);
+      border-radius: var(--radius); padding: 14px 16px; margin: 16px 0;
+    }
+    .callout strong { display: block; margin-bottom: 4px; }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 20px; }
+    .chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      height: 28px; padding: 0 10px; border: 1px solid var(--border);
+      border-radius: 999px; font-size: 12px; background: var(--surface);
+    }
+    .dot { width: 8px; height: 8px; border-radius: 2px; }
+    .legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+    .legend i { display: inline-block; width: 22px; border-top: 2px solid oklch(62% 0.01 240); margin-right: 6px; }
+    .legend .x { border-top-style: dashed; border-top-color: oklch(44% 0.04 250); }
+    ol.rules { padding-left: 20px; }
+    ol.rules li { margin: 8px 0; max-width: 72ch; }
+    @media (max-width: 800px) {
+      .wrap { grid-template-columns: 1fr; }
+      nav { position: relative; height: auto; border-right: 0; border-bottom: 1px solid var(--border); }
+      main { padding: 24px 16px 64px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <nav data-od-id="toc" aria-label="目录">
+      <p>程序血缘地图 · 交接</p>
+      <a href="#overview">这份包是什么</a>
+      <a href="#locked">锁定规则</a>
+      <a href="#domain">领域模型</a>
+      <a href="#api">接口</a>
+      <a href="#tree">拆树算法</a>
+      <a href="#views">四视图状态机</a>
+      <a href="#ux">交互验收</a>
+      <a href="#visual">视觉 token</a>
+      <a href="#eng">落地顺序</a>
+      <a href="#files">文件清单</a>
+    </nav>
+    <main>
+      <p class="kicker">HANDOFF · TECH / UTILITY</p>
+      <h1 data-od-id="title">程序血缘地图开发交接手册</h1>
+      <p class="lead">对着 <code>prototype/lineage-map-v2.html</code> 写的工程交接件。抄视觉、抄交互、抄 <code>buildTree</code> 的规则；数据、组件化、权限、性能、路由全部重做。血缘语义不要改。</p>
+      <div class="legend" data-od-id="edge-legend">
+        <span><i></i>实线 · 主依赖</span>
+        <span><i class="x"></i>虚线 · 跨支关联</span>
+        <span>Java 只作为叶子</span>
+      </div>
+
+      <h2 id="overview">这份包是什么</h2>
+      <p>HTML 原型是验收标准，不是可上线源码。后端按本手册返回已经拆好的主依赖 / 跨支；前端按四种视图画出来。</p>
+      <table>
+        <thead><tr><th>角色</th><th>先看</th></tr></thead>
+        <tbody>
+          <tr><td>产品 / QA</td><td>锁定规则 → 交互验收 → 打开原型</td></tr>
+          <tr><td>后端</td><td>领域模型 → 接口 → 拆树算法 + <code>node spec/verify-tree.mjs</code></td></tr>
+          <tr><td>前端</td><td>四视图状态机 → 交互 → <code>spec/types.ts</code> 与 tokens</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="locked">锁定规则</h2>
+      <ol class="rules" data-od-id="locked-rules">
+        <li><strong>只画下游。</strong>从当前表 BFS。上游和侧输入（如 <code>dim.merchant</code>）不进树。搜索到域外表是换根，不是把上游画进来。</li>
+        <li><strong>Java 是叶子。</strong><code>from.type === 'java'</code> 的边全部丢掉。Java 不写出表，也不调用其他程序。</li>
+        <li><strong>一节点一条主父边。</strong>其余仍在可达子图内的边是跨支，画虚线。自环丢弃。</li>
+        <li><strong>主父边判定：</strong>更长路径优先；并列时 <code>writes &gt; derives &gt; calls &gt; reads</code>。</li>
+      </ol>
+      <div class="callout">
+        <strong>第一期明确不做</strong>
+        字段级血缘、上游/双向全景、Java 出边、一次铺开 500+ 叶子、把跨支画成第二条等权实线。
+      </div>
+
+      <h2 id="domain">领域模型</h2>
+      <pre>type Node = {
+  id: string
+  name: string          // 技术名，等宽
+  title: string         // 中文名
+  type: 'table' | 'view' | 'procedure' | 'java'
+  owner: string
+  system: string
+  status: 'verified' | 'inferred'
+  desc?: string
+}
+
+type Edge = {
+  from: string
+  to: string
+  rel: 'reads' | 'writes' | 'calls' | 'derives'
+}</pre>
+      <p>只有 <code>table</code> 能当 seed。<code>id</code> 可含点号，选择器用 <code>data-id</code>，不要当 CSS class。</p>
+      <div class="chips">
+        <span class="chip"><i class="dot" style="background:var(--table)"></i>表</span>
+        <span class="chip"><i class="dot" style="background:var(--view)"></i>视图</span>
+        <span class="chip"><i class="dot" style="background:var(--proc)"></i>存储过程</span>
+        <span class="chip"><i class="dot" style="background:var(--java)"></i>Java 终端</span>
+      </div>
+
+      <h2 id="api">接口</h2>
+      <p>完整 schema 见 <code>spec/openapi.yaml</code>。原则：树的拆分后端做，前端只画。</p>
+      <table>
+        <thead><tr><th>方法</th><th>路径</th><th>用途</th></tr></thead>
+        <tbody>
+          <tr><td>GET</td><td><code>/lineage?seed=&amp;depth=&amp;expand=</code></td><td>下游树。返回 nodes / tree / cross / rank / parent / stats</td></tr>
+          <tr><td>GET</td><td><code>/lineage/children?seed=&amp;id=</code></td><td>懒展开 tree 子节点</td></tr>
+          <tr><td>GET</td><td><code>/lineage/search?q=&amp;seed=</code></td><td>搜索。表可不在当前下游（用于换根）</td></tr>
+          <tr><td>GET</td><td><code>/lineage/nodes/{id}?seed=</code></td><td>详情邻接</td></tr>
+          <tr><td>GET</td><td><code>/lineage/path?from=&amp;to=</code></td><td>最短下游路径，边上标 tree | cross</td></tr>
+        </tbody>
+      </table>
+      <p>错误码：<code>INVALID_SEED</code> 400 · <code>FORBIDDEN</code> 403 · <code>SEED_NOT_FOUND</code> 404 · <code>LINEAGE_NOT_COLLECTED</code> 409。</p>
+      <p>URL 状态：<code>?seed=&amp;sel=&amp;mode=&amp;depth=&amp;types=</code>，不要只靠 localStorage。</p>
+      <p><code>stats</code> 按整棵可达下游计（权限过滤后），不要按当前可见节点计。默认 <code>depth=1</code>；<code>all</code> 走总览聚类。</p>
+
+      <h2 id="tree">拆树算法</h2>
+      <p>参考实现 <code>spec/build-tree.mjs</code>，回归 <code>node spec/verify-tree.mjs</code>。seed = <code>ods.trade_order</code> 时期望如下。</p>
+      <h3>进树</h3>
+      <table data-od-id="expected-tree">
+        <thead><tr><th>id</th><th>rank</th><th>主父节点</th><th>rel</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">ods.trade_order</td><td>0</td><td>—</td><td>—</td></tr>
+          <tr><td class="mono">v_order_enriched</td><td>1</td><td class="mono">ods.trade_order</td><td>reads</td></tr>
+          <tr><td class="mono">sp_risk</td><td>1</td><td class="mono">ods.trade_order</td><td>reads</td></tr>
+          <tr><td class="mono">OrderRiskEngine</td><td>1</td><td class="mono">ods.trade_order</td><td>reads</td></tr>
+          <tr><td class="mono">dwd.fact_order</td><td>2</td><td class="mono">v_order_enriched</td><td>derives</td></tr>
+          <tr><td class="mono">risk.order_score</td><td>2</td><td class="mono">sp_risk</td><td>writes</td></tr>
+          <tr><td class="mono">sp_mart</td><td>3</td><td class="mono">dwd.fact_order</td><td>reads</td></tr>
+          <tr><td class="mono">v_risk_daily</td><td>3</td><td class="mono">dwd.fact_order</td><td>reads</td></tr>
+          <tr><td class="mono">ads.merchant_gmv</td><td>4</td><td class="mono">sp_mart</td><td>writes</td></tr>
+          <tr><td class="mono">GmvReportService</td><td>5</td><td class="mono">ads.merchant_gmv</td><td>reads</td></tr>
+        </tbody>
+      </table>
+      <h3>跨支（必须是虚线）</h3>
+      <table>
+        <thead><tr><th>from</th><th>to</th><th>rel</th><th>为什么不是主边</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">v_order_enriched</td><td class="mono">GmvReportService</td><td>reads</td><td>更长路径走集市</td></tr>
+          <tr><td class="mono">ods.trade_order</td><td class="mono">v_risk_daily</td><td>reads</td><td>更长路径走事实表</td></tr>
+          <tr><td class="mono">risk.order_score</td><td class="mono">v_risk_daily</td><td>reads</td><td>与 fact 同 hop，已先写入 fact</td></tr>
+        </tbody>
+      </table>
+      <p>不进树：<code>core.t_order</code> / <code>sp_sync</code>（上游），<code>OrderIngestJob</code> 一支，<code>dim.merchant</code> / <code>v_active_merchant</code>（侧输入）。</p>
+      <p>调用路径用 BFS 最短路，不是沿 parent 回溯。seed → GmvReportService 的最短路第二跳是跨支，这是对的。</p>
+
+      <h2 id="views">四视图状态机</h2>
+      <table>
+        <thead><tr><th>mode</th><th>产品名</th><th>干什么</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">focus</td><td>下游树</td><td>按 hop 分列。默认 1 层。+N 只展开 tree 子节点</td></tr>
+          <tr><td class="mono">overview</td><td>分层总览</td><td>hop × 类型聚类。「全部」必须进这里</td></tr>
+          <tr><td class="mono">impact</td><td>影响清单</td><td>清点下游；跨支单独一列</td></tr>
+          <tr><td class="mono">path</td><td>调用路径</td><td>seed → 终端的最短下游路径，跨支要标</td></tr>
+        </tbody>
+      </table>
+      <p>点「全部 · 聚类」且图很大时，强制 <code>mode = overview</code>。禁止在下游树一次铺开全部叶子。</p>
+      <p>换根：<code>seed = sel = tableId</code>，清空 expanded，重拉 <code>/lineage</code>。Esc 先关搜索，再 <code>sel = seed</code>。键盘 1–4 切视图。</p>
+
+      <h2 id="ux">交互验收（16 对象）</h2>
+      <ol class="rules" data-od-id="qa-list">
+        <li>第一列只有当前表，绿色「当前」，外面没有额外白框。</li>
+        <li>看不到 <code>dim.merchant</code>、<code>core.t_order</code>、<code>OrderIngestJob</code>。</li>
+        <li><code>GmvReportService</code> 主父是 <code>ads.merchant_gmv</code>（实线）；补全视图到它是虚线。</li>
+        <li><code>v_risk_daily</code> 主父是 <code>dwd.fact_order</code>；来自 seed 和风险分的是虚线。</li>
+        <li>点 +N 只多出该节点的树子节点。双击表设为根后上游消失。</li>
+        <li>四类筛选全关 → 空状态 +「显示全部类型」。搜索无结果要带上关键字。</li>
+        <li>主按钮「把这张表设为根」hover 仍是深底浅字。</li>
+      </ol>
+
+      <h2 id="visual">视觉 token</h2>
+      <p>Accent 只给当前表和选中路径。芯片和页签不要用绿。完整变量见 <code>spec/tokens.css</code>。不要挂 Google Fonts。</p>
+      <pre>:root {
+  --bg: oklch(98% 0.005 250);
+  --surface: oklch(100% 0 0);
+  --fg: oklch(22% 0.02 240);
+  --muted: oklch(42% 0.02 240);
+  --border: oklch(90% 0.008 240);
+  --accent: oklch(58% 0.16 145);
+}</pre>
+
+      <h2 id="eng">落地顺序</h2>
+      <ol class="rules">
+        <li>把原型当验收，对照交互清单写 Story。</li>
+        <li>后端实现下游树；拆树用本包参考实现并对 fixture 回归。</li>
+        <li>前端拆 Header / Toolbar / LineageCanvas / NodeCard / Inspector / ImpactList / CallPath。</li>
+        <li>先接 16 对象真实数据（或 fixture）走通虚线、设为根、路径。</li>
+        <li>默认 1 层；全部走总览聚类；展开走 children 接口。</li>
+      </ol>
+
+      <h2 id="files">文件清单</h2>
+      <table>
+        <thead><tr><th>路径</th><th>内容</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">LOCKED-RULES.md</td><td>不可改语义</td></tr>
+          <tr><td class="mono">docs/01–08</td><td>概述、领域、接口、算法、状态机、交互、视觉、工程</td></tr>
+          <tr><td class="mono">spec/types.ts</td><td>TypeScript 类型</td></tr>
+          <tr><td class="mono">spec/openapi.yaml</td><td>接口 schema</td></tr>
+          <tr><td class="mono">spec/build-tree.mjs</td><td>拆树参考实现</td></tr>
+          <tr><td class="mono">spec/verify-tree.mjs</td><td>16 对象回归</td></tr>
+          <tr><td class="mono">spec/tokens.css</td><td>设计 token</td></tr>
+          <tr><td class="mono">fixtures/</td><td>样例图与期望拆树结果</td></tr>
+          <tr><td class="mono">prototype/lineage-map-v2.html</td><td>验收原型</td></tr>
+        </tbody>
+      </table>
+    </main>
+  </div>
+</body>
+</html>

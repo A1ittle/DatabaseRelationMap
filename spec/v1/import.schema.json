@@ -1,0 +1,1165 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:program-lineage:import:v1",
+  "$ref": "#/$defs/ImportBatch",
+  "$defs": {
+    "ObjectType": {
+      "type": "string",
+      "enum": [
+        "table",
+        "view",
+        "procedure",
+        "java"
+      ]
+    },
+    "RelationType": {
+      "type": "string",
+      "enum": [
+        "reads",
+        "writes",
+        "calls",
+        "derives"
+      ]
+    },
+    "EvidenceState": {
+      "type": "string",
+      "enum": [
+        "observed",
+        "parsed",
+        "inferred",
+        "confirmed",
+        "unknown"
+      ]
+    },
+    "Object": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "type": {
+          "$ref": "#/$defs/ObjectType"
+        },
+        "namespace": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300
+        },
+        "technicalName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "displayName": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "system": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "owner": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 200
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "javaKind": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "class",
+                "job",
+                "service"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "namespace",
+        "technicalName",
+        "displayName",
+        "system",
+        "owner",
+        "javaKind"
+      ]
+    },
+    "Evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "state": {
+          "$ref": "#/$defs/EvidenceState"
+        },
+        "sourceRef": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "observedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 4000
+        }
+      },
+      "required": [
+        "id",
+        "state",
+        "sourceRef",
+        "observedAt",
+        "description"
+      ]
+    },
+    "Relation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "source": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "target": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "rel": {
+          "$ref": "#/$defs/RelationType"
+        },
+        "sourceOrder": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "evidenceIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "uniqueItems": true,
+          "minItems": 1,
+          "maxItems": 100
+        }
+      },
+      "required": [
+        "id",
+        "source",
+        "target",
+        "rel",
+        "sourceOrder",
+        "evidenceIds"
+      ]
+    },
+    "Coverage": {
+      "type": "string",
+      "enum": [
+        "complete",
+        "partial",
+        "unknown"
+      ]
+    },
+    "ImportBatch": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "batchKey": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "scopeId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "sourceVersion": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "capturedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "coverage": {
+          "$ref": "#/$defs/Coverage"
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "full"
+          ]
+        },
+        "objects": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Object"
+          },
+          "minItems": 1,
+          "maxItems": 100000
+        },
+        "relations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Relation"
+          },
+          "maxItems": 500000
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Evidence"
+          },
+          "maxItems": 500000
+        }
+      },
+      "required": [
+        "batchKey",
+        "scopeId",
+        "sourceVersion",
+        "capturedAt",
+        "coverage",
+        "mode",
+        "objects",
+        "relations",
+        "evidence"
+      ]
+    },
+    "Stats": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "downstream": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "javaTerminals": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "leaves": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "crossEdges": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "byType": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "table": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "view": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "procedure": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "java": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "table",
+            "view",
+            "procedure",
+            "java"
+          ]
+        },
+        "countStatus": {
+          "type": "string",
+          "enum": [
+            "exact",
+            "lower_bound",
+            "unknown"
+          ]
+        }
+      },
+      "required": [
+        "downstream",
+        "javaTerminals",
+        "leaves",
+        "crossEdges",
+        "byType",
+        "countStatus"
+      ]
+    },
+    "Meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "requestId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "queryId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "snapshotId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "coverage": {
+          "$ref": "#/$defs/Coverage"
+        },
+        "computationStatus": {
+          "type": "string",
+          "enum": [
+            "complete",
+            "incomplete"
+          ]
+        },
+        "treeStatus": {
+          "type": "string",
+          "enum": [
+            "available",
+            "unavailable_cycle",
+            "unavailable_incomplete"
+          ]
+        },
+        "algorithmVersion": {
+          "type": "string"
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "requestId",
+        "queryId",
+        "snapshotId",
+        "coverage",
+        "computationStatus",
+        "treeStatus",
+        "algorithmVersion",
+        "expiresAt"
+      ]
+    },
+    "QueryRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "seedId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "snapshotId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        }
+      },
+      "required": [
+        "seedId"
+      ]
+    },
+    "QueryResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "meta": {
+          "$ref": "#/$defs/Meta"
+        },
+        "seed": {
+          "$ref": "#/$defs/Object"
+        },
+        "stats": {
+          "$ref": "#/$defs/Stats"
+        },
+        "projection": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ProjectionResponse"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "meta",
+        "seed",
+        "stats",
+        "projection"
+      ]
+    },
+    "GraphNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "object": {
+          "$ref": "#/$defs/Object"
+        },
+        "minHops": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "layoutRank": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "parentEdgeId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "treeChildCount": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "crossCount": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "object",
+        "minHops",
+        "layoutRank",
+        "parentEdgeId",
+        "treeChildCount",
+        "crossCount"
+      ]
+    },
+    "GraphEdge": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "relation": {
+          "$ref": "#/$defs/Relation"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "tree",
+            "cross",
+            "unclassified"
+          ]
+        }
+      },
+      "required": [
+        "relation",
+        "kind"
+      ]
+    },
+    "ProjectionRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "candidateIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "minItems": 1,
+          "maxItems": 200,
+          "uniqueItems": true
+        },
+        "selectedId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "types": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ObjectType"
+          },
+          "maxItems": 4,
+          "uniqueItems": true
+        },
+        "revealSelectedPath": {
+          "type": "boolean"
+        },
+        "clientRevision": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "candidateIds",
+        "selectedId",
+        "types",
+        "revealSelectedPath",
+        "clientRevision"
+      ]
+    },
+    "ProjectionResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "meta": {
+          "$ref": "#/$defs/Meta"
+        },
+        "clientRevision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "nodes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/GraphNode"
+          },
+          "maxItems": 200
+        },
+        "edges": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/GraphEdge"
+          },
+          "maxItems": 2000
+        },
+        "matchedDownstream": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "renderLimited": {
+          "type": "boolean"
+        },
+        "reasons": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "TYPE_FILTER",
+              "NODE_BUDGET",
+              "EDGE_BUDGET",
+              "LAYOUT_UNAVAILABLE",
+              "PATH_REQUIRES_HIDDEN_TYPES"
+            ]
+          }
+        }
+      },
+      "required": [
+        "meta",
+        "clientRevision",
+        "nodes",
+        "edges",
+        "matchedDownstream",
+        "renderLimited",
+        "reasons"
+      ]
+    },
+    "PageInfo": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "nextCursor": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 4096
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "hasMore": {
+          "type": "boolean"
+        },
+        "total": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "nextCursor",
+        "hasMore",
+        "total"
+      ]
+    },
+    "NodePage": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "meta": {
+          "$ref": "#/$defs/Meta"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/GraphNode"
+          },
+          "maxItems": 100
+        },
+        "page": {
+          "$ref": "#/$defs/PageInfo"
+        }
+      },
+      "required": [
+        "meta",
+        "items",
+        "page"
+      ]
+    },
+    "SearchHit": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "object": {
+          "$ref": "#/$defs/Object"
+        },
+        "action": {
+          "type": "string",
+          "enum": [
+            "reveal",
+            "recenter"
+          ]
+        }
+      },
+      "required": [
+        "object",
+        "action"
+      ]
+    },
+    "SearchResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "requestId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SearchHit"
+          },
+          "maxItems": 20
+        },
+        "page": {
+          "$ref": "#/$defs/PageInfo"
+        }
+      },
+      "required": [
+        "requestId",
+        "items",
+        "page"
+      ]
+    },
+    "Cluster": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "layoutRank": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "type": {
+          "$ref": "#/$defs/ObjectType"
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "id",
+        "layoutRank",
+        "type",
+        "count"
+      ]
+    },
+    "ClusterPage": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "meta": {
+          "$ref": "#/$defs/Meta"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Cluster"
+          },
+          "maxItems": 100
+        },
+        "page": {
+          "$ref": "#/$defs/PageInfo"
+        }
+      },
+      "required": [
+        "meta",
+        "items",
+        "page"
+      ]
+    },
+    "NodeDetail": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "meta": {
+          "$ref": "#/$defs/Meta"
+        },
+        "node": {
+          "$ref": "#/$defs/GraphNode"
+        },
+        "directDownstreamCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "canSetAsRoot": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "meta",
+        "node",
+        "directDownstreamCount",
+        "canSetAsRoot"
+      ]
+    },
+    "RelationPage": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "meta": {
+          "$ref": "#/$defs/Meta"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/GraphEdge"
+          },
+          "maxItems": 100
+        },
+        "endpointObjects": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Object"
+          },
+          "maxItems": 200
+        },
+        "page": {
+          "$ref": "#/$defs/PageInfo"
+        }
+      },
+      "required": [
+        "meta",
+        "items",
+        "endpointObjects",
+        "page"
+      ]
+    },
+    "PathResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "meta": {
+          "$ref": "#/$defs/Meta"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "found",
+            "not_found",
+            "unknown"
+          ]
+        },
+        "nodes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Object"
+          },
+          "maxItems": 256
+        },
+        "edges": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/GraphEdge"
+          },
+          "maxItems": 255
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "QUERY_INCOMPLETE",
+                "PATH_LENGTH_LIMIT"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "meta",
+        "status",
+        "nodes",
+        "edges",
+        "reason"
+      ]
+    },
+    "EvidenceResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "meta": {
+          "$ref": "#/$defs/Meta"
+        },
+        "relationId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Evidence"
+          },
+          "maxItems": 100
+        }
+      },
+      "required": [
+        "meta",
+        "relationId",
+        "items"
+      ]
+    },
+    "Error": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "type": "string",
+          "enum": [
+            "INVALID_ARGUMENT",
+            "INVALID_SEED",
+            "UNAUTHENTICATED",
+            "FORBIDDEN",
+            "NOT_FOUND",
+            "LINEAGE_NOT_COLLECTED",
+            "QUERY_EXPIRED",
+            "POLICY_CHANGED",
+            "CURSOR_MISMATCH",
+            "PROJECTION_LIMIT",
+            "RATE_LIMITED",
+            "TEMPORARILY_UNAVAILABLE",
+            "IMPORT_INVALID",
+            "PUBLISH_CONFLICT",
+            "PAYLOAD_TOO_LARGE"
+          ]
+        },
+        "message": {
+          "type": "string"
+        },
+        "requestId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "retryable": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "code",
+        "message",
+        "requestId",
+        "retryable"
+      ]
+    },
+    "ImportResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "runId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "received",
+            "validating",
+            "ready",
+            "failed",
+            "published"
+          ]
+        },
+        "snapshotId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "errorCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "warningCount": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "runId",
+        "status",
+        "snapshotId",
+        "errorCount",
+        "warningCount"
+      ]
+    },
+    "PublishRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "expectedActiveSnapshotId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "expectedActiveSnapshotId"
+      ]
+    },
+    "PublishResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "snapshotId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "publishedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "snapshotId",
+        "publishedAt"
+      ]
+    },
+    "ErrorItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "severity": {
+          "type": "string",
+          "enum": [
+            "error",
+            "warning"
+          ]
+        }
+      },
+      "required": [
+        "code",
+        "path",
+        "message",
+        "severity"
+      ]
+    },
+    "ImportDetail": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "run": {
+          "$ref": "#/$defs/ImportResponse"
+        },
+        "issues": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ErrorItem"
+          },
+          "maxItems": 100
+        },
+        "page": {
+          "$ref": "#/$defs/PageInfo"
+        }
+      },
+      "required": [
+        "run",
+        "issues",
+        "page"
+      ]
+    }
+  }
+}

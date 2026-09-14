@@ -1,0 +1,28 @@
+{
+  "status": "PASS",
+  "openapiPaths": 14,
+  "schemas": 32,
+  "checks": [
+    "Official OpenAPI 3.1 document structure",
+    "32 component schemas and import schema meta-validation",
+    "3 contract examples validate",
+    "Manual fixture reach/rank/parent/partition/count/path/projection invariants",
+    "3 malformed examples rejected",
+    "Preserved prototype file hashes",
+    "Design links, references and code fences"
+  ],
+  "notValidated": [
+    "Application implementation",
+    "SQL migration execution",
+    "Real input lineage correctness",
+    "UI runtime and performance",
+    "Production OIDC and deployment"
+  ],
+  "verifiedAt": "2026-09-14T16:21:41.668305+08:00",
+  "referenceRegression": "OK reach=10 tree=9 cross=3",
+  "referenceProbesReproduced": true,
+  "officialSchema": {
+    "url": "https://spec.openapis.org/oas/3.1/schema/2022-10-07",
+    "sha256": "da01ba28852cac0de53893797cb8d1942bc3b05084f526dcc216717dec314ed0"
+  }
+}

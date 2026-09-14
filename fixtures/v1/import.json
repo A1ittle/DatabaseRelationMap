@@ -1,0 +1,201 @@
+{
+  "batchKey": "demo-001",
+  "scopeId": "demo",
+  "sourceVersion": "fixture-v1",
+  "capturedAt": "2026-09-14T00:00:00Z",
+  "coverage": "complete",
+  "mode": "full",
+  "objects": [
+    {
+      "id": "root",
+      "type": "table",
+      "namespace": "demo/prod/core",
+      "technicalName": "root",
+      "displayName": "root",
+      "system": "demo",
+      "owner": null,
+      "javaKind": null
+    },
+    {
+      "id": "view-a",
+      "type": "view",
+      "namespace": "demo/prod/core",
+      "technicalName": "view-a",
+      "displayName": "view-a",
+      "system": "demo",
+      "owner": null,
+      "javaKind": null
+    },
+    {
+      "id": "proc-b",
+      "type": "procedure",
+      "namespace": "demo/prod/core",
+      "technicalName": "proc-b",
+      "displayName": "proc-b",
+      "system": "demo",
+      "owner": null,
+      "javaKind": null
+    },
+    {
+      "id": "table-c",
+      "type": "table",
+      "namespace": "demo/prod/core",
+      "technicalName": "table-c",
+      "displayName": "table-c",
+      "system": "demo",
+      "owner": null,
+      "javaKind": null
+    },
+    {
+      "id": "java-j",
+      "type": "java",
+      "namespace": "demo/prod/core",
+      "technicalName": "java-j",
+      "displayName": "java-j",
+      "system": "demo",
+      "owner": null,
+      "javaKind": "class"
+    },
+    {
+      "id": "external-x",
+      "type": "table",
+      "namespace": "demo/prod/core",
+      "technicalName": "external-x",
+      "displayName": "external-x",
+      "system": "demo",
+      "owner": null,
+      "javaKind": null
+    },
+    {
+      "id": "proc-s",
+      "type": "procedure",
+      "namespace": "demo/prod/core",
+      "technicalName": "proc-s",
+      "displayName": "proc-s",
+      "system": "demo",
+      "owner": null,
+      "javaKind": null
+    }
+  ],
+  "relations": [
+    {
+      "id": "e01",
+      "source": "root",
+      "target": "view-a",
+      "rel": "reads",
+      "sourceOrder": 0,
+      "evidenceIds": [
+        "ev-demo"
+      ]
+    },
+    {
+      "id": "e02",
+      "source": "root",
+      "target": "view-a",
+      "rel": "derives",
+      "sourceOrder": 0,
+      "evidenceIds": [
+        "ev-demo"
+      ]
+    },
+    {
+      "id": "e03",
+      "source": "view-a",
+      "target": "proc-b",
+      "rel": "reads",
+      "sourceOrder": 0,
+      "evidenceIds": [
+        "ev-demo"
+      ]
+    },
+    {
+      "id": "e04",
+      "source": "proc-b",
+      "target": "table-c",
+      "rel": "writes",
+      "sourceOrder": 0,
+      "evidenceIds": [
+        "ev-demo"
+      ]
+    },
+    {
+      "id": "e05",
+      "source": "table-c",
+      "target": "java-j",
+      "rel": "reads",
+      "sourceOrder": 0,
+      "evidenceIds": [
+        "ev-demo"
+      ]
+    },
+    {
+      "id": "e06",
+      "source": "view-a",
+      "target": "java-j",
+      "rel": "reads",
+      "sourceOrder": 0,
+      "evidenceIds": [
+        "ev-demo"
+      ]
+    },
+    {
+      "id": "e07",
+      "source": "root",
+      "target": "java-j",
+      "rel": "reads",
+      "sourceOrder": 0,
+      "evidenceIds": [
+        "ev-demo"
+      ]
+    },
+    {
+      "id": "e08",
+      "source": "java-j",
+      "target": "external-x",
+      "rel": "writes",
+      "sourceOrder": 0,
+      "evidenceIds": [
+        "ev-demo"
+      ]
+    },
+    {
+      "id": "e09",
+      "source": "external-x",
+      "target": "view-a",
+      "rel": "reads",
+      "sourceOrder": 0,
+      "evidenceIds": [
+        "ev-demo"
+      ]
+    },
+    {
+      "id": "e10",
+      "source": "root",
+      "target": "proc-s",
+      "rel": "reads",
+      "sourceOrder": 0,
+      "evidenceIds": [
+        "ev-demo"
+      ]
+    },
+    {
+      "id": "e11",
+      "source": "proc-s",
+      "target": "table-c",
+      "rel": "writes",
+      "sourceOrder": 0,
+      "evidenceIds": [
+        "ev-demo"
+      ]
+    }
+  ],
+  "evidence": [
+    {
+      "id": "ev-demo",
+      "state": "unknown",
+      "sourceRef": "fixture:manually-authored",
+      "observedAt": "2026-09-14T00:00:00Z",
+      "description": "Synthetic design example, not real parsed lineage."
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+/* 程序血缘地图 tokens。从 prototype/lineage-map-v2.html 抽出。
+   等宽字体不要挂 Google Fonts；按公司规范替换 --font-mono。 */
+:root {
+  --bg:      oklch(98% 0.005 250);
+  --surface: oklch(100% 0 0);
+  --fg:      oklch(22% 0.02 240);
+  --muted:   oklch(42% 0.02 240);
+  --border:  oklch(90% 0.008 240);
+  --accent:  oklch(58% 0.16 145);
+
+  --success: oklch(40% 0.11 145);
+  --warn:    oklch(44% 0.12 75);
+  --danger:  oklch(46% 0.16 25);
+
+  --table:   oklch(38% 0.04 250);
+  --view:    oklch(38% 0.07 200);
+  --proc:    oklch(40% 0.09 75);
+  --java:    oklch(36% 0.06 280);
+
+  --hover:    oklch(96% 0.006 250);
+  --press:    oklch(93% 0.008 250);
+  --fg-hover: oklch(16% 0.02 240);
+  --fg-press: oklch(10% 0.02 240);
+
+  --inspect-w: 320px;
+  --radius: 6px;
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+
+  --font-display: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --font-body:    -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --font-mono:    "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}

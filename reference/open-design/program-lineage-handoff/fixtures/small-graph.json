@@ -1,0 +1,196 @@
+{
+  "comment": "交易订单域命名对象图，对应原型 CORE / CORE_EDGES。seed 默认 ods.trade_order。",
+  "seed": "ods.trade_order",
+  "nodes": [
+    {
+      "id": "core.t_order",
+      "name": "core.t_order",
+      "title": "核心订单表",
+      "type": "table",
+      "owner": "核心交易",
+      "system": "Oracle",
+      "status": "verified",
+      "desc": "交易核心库订单主表。选它作根时才会进入下游树。"
+    },
+    {
+      "id": "ods.pay_log",
+      "name": "ods.pay_channel_log",
+      "title": "支付渠道日志",
+      "type": "table",
+      "owner": "支付中台",
+      "system": "Hive",
+      "status": "verified",
+      "desc": "渠道回调与支付流水。"
+    },
+    {
+      "id": "stg.user_account",
+      "name": "stg.user_account",
+      "title": "用户账户暂存",
+      "type": "table",
+      "owner": "账户域",
+      "system": "Hive",
+      "status": "verified",
+      "desc": "账户日切片。"
+    },
+    {
+      "id": "dim.merchant",
+      "name": "dim.merchant",
+      "title": "商户维表",
+      "type": "table",
+      "owner": "商户中心",
+      "system": "Hive",
+      "status": "verified",
+      "desc": "商户主数据，是补全视图的侧输入，不是当前表的下游。"
+    },
+    {
+      "id": "v_active_merchant",
+      "name": "dw.v_active_merchant",
+      "title": "活跃商户视图",
+      "type": "view",
+      "owner": "商户中心",
+      "system": "Hive",
+      "status": "inferred",
+      "desc": "过滤有效商户。"
+    },
+    {
+      "id": "sp_sync",
+      "name": "dw.sp_sync_order_from_core",
+      "title": "核心订单同步",
+      "type": "procedure",
+      "owner": "数仓平台",
+      "system": "Oracle SP",
+      "status": "verified",
+      "desc": "从核心库抽取并写入 ODS。"
+    },
+    {
+      "id": "OrderIngestJob",
+      "name": "com.trade.job.OrderIngestJob",
+      "title": "订单接入作业",
+      "type": "java",
+      "owner": "交易中台",
+      "system": "Spark / Java",
+      "status": "verified",
+      "desc": "读取支付日志的终端作业，不再写出其他表。"
+    },
+    {
+      "id": "ods.trade_order",
+      "name": "ods.trade_order",
+      "title": "交易订单表",
+      "type": "table",
+      "owner": "交易中台",
+      "system": "Hive",
+      "status": "verified",
+      "desc": "本次地图的输入表，下游树的根。"
+    },
+    {
+      "id": "v_order_enriched",
+      "name": "dw.v_order_enriched",
+      "title": "订单补全视图",
+      "type": "view",
+      "owner": "数仓平台",
+      "system": "Hive",
+      "status": "verified",
+      "desc": "订单分析入口。GMV 报表服务也会直接读它，形成跨支。"
+    },
+    {
+      "id": "dwd.fact_order",
+      "name": "dwd.fact_order",
+      "title": "订单事实表",
+      "type": "table",
+      "owner": "数仓平台",
+      "system": "Hive",
+      "status": "verified",
+      "desc": "明细层订单事实。风险日视图也会读它。"
+    },
+    {
+      "id": "sp_mart",
+      "name": "dw.sp_refresh_order_mart",
+      "title": "刷新订单集市",
+      "type": "procedure",
+      "owner": "数仓平台",
+      "system": "Hive SP",
+      "status": "inferred",
+      "desc": "按日刷新商户 GMV 集市。"
+    },
+    {
+      "id": "sp_risk",
+      "name": "dw.sp_score_order_risk",
+      "title": "计算订单风险分",
+      "type": "procedure",
+      "owner": "风控",
+      "system": "Hive SP",
+      "status": "verified",
+      "desc": "从 ODS 订单计算风险分，替代 Java 写表。"
+    },
+    {
+      "id": "OrderRiskEngine",
+      "name": "com.risk.engine.OrderRiskEngine",
+      "title": "订单风控引擎",
+      "type": "java",
+      "owner": "风控",
+      "system": "Java 服务",
+      "status": "verified",
+      "desc": "实时读取 ODS 订单的终端服务，不再写回风险表。"
+    },
+    {
+      "id": "risk.order_score",
+      "name": "risk.order_score",
+      "title": "订单风险分",
+      "type": "table",
+      "owner": "风控",
+      "system": "Hive",
+      "status": "verified",
+      "desc": "由存储过程写出，供视图和 Java 终端消费。"
+    },
+    {
+      "id": "ads.merchant_gmv",
+      "name": "ads.merchant_gmv",
+      "title": "商户 GMV 集市",
+      "type": "table",
+      "owner": "分析域",
+      "system": "Hive",
+      "status": "verified",
+      "desc": "面向报表的商户成交汇总。"
+    },
+    {
+      "id": "GmvReportService",
+      "name": "com.bi.GmvReportService",
+      "title": "GMV 报表服务",
+      "type": "java",
+      "owner": "分析域",
+      "system": "Java 服务",
+      "status": "inferred",
+      "desc": "终端：读集市，也读补全视图，所以有一条跨支。"
+    },
+    {
+      "id": "v_risk_daily",
+      "name": "dw.v_risk_order_daily",
+      "title": "风险订单日视图",
+      "type": "view",
+      "owner": "风控",
+      "system": "Hive",
+      "status": "inferred",
+      "desc": "同时读 ODS 订单、事实表和风险分，典型的下游汇合。"
+    }
+  ],
+  "edges": [
+    { "from": "core.t_order", "to": "sp_sync", "rel": "reads" },
+    { "from": "sp_sync", "to": "ods.trade_order", "rel": "writes" },
+    { "from": "ods.pay_log", "to": "OrderIngestJob", "rel": "reads" },
+    { "from": "stg.user_account", "to": "OrderIngestJob", "rel": "reads" },
+    { "from": "dim.merchant", "to": "v_active_merchant", "rel": "reads" },
+    { "from": "v_active_merchant", "to": "v_order_enriched", "rel": "reads" },
+    { "from": "ods.trade_order", "to": "v_order_enriched", "rel": "reads" },
+    { "from": "v_order_enriched", "to": "dwd.fact_order", "rel": "derives" },
+    { "from": "dwd.fact_order", "to": "sp_mart", "rel": "reads" },
+    { "from": "sp_mart", "to": "ads.merchant_gmv", "rel": "writes" },
+    { "from": "ads.merchant_gmv", "to": "GmvReportService", "rel": "reads" },
+    { "from": "v_order_enriched", "to": "GmvReportService", "rel": "reads" },
+    { "from": "ods.trade_order", "to": "sp_risk", "rel": "reads" },
+    { "from": "sp_risk", "to": "risk.order_score", "rel": "writes" },
+    { "from": "ods.trade_order", "to": "v_risk_daily", "rel": "reads" },
+    { "from": "dwd.fact_order", "to": "v_risk_daily", "rel": "reads" },
+    { "from": "risk.order_score", "to": "v_risk_daily", "rel": "reads" },
+    { "from": "ods.trade_order", "to": "OrderRiskEngine", "rel": "reads" }
+  ]
+}

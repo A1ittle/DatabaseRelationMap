@@ -1,0 +1,1173 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>程序血缘地图 · 下游树</title>
+  <!-- 完整样式已内联，离线双击本文件即可。同源可拷贝文件：lineage-map.css -->
+  <link rel="stylesheet" href="lineage-map.css" />
+  <style>
+
+    :root {
+      --bg: #f6f9fc;
+      --surface: #ffffff;
+      --fg: #121c23;
+      --muted: #444f57;
+      --border: #d9dfe3;
+      --accent: #299236;
+      --font-display: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+      --success: #15561d;
+      --warn: #784600;
+      --danger: #9e2225;
+      --table: #324457;
+      --view: #004d51;
+      --proc: #633f00;
+      --java: #37395c;
+      --inspect-w: 320px;
+      --radius: 6px;
+      --ease: cubic-bezier(0.2, 0, 0, 1);
+      --hover: #eff2f6;
+      --press: #e4e8ed;
+      --fg-hover: #060e15;
+      --fg-press: #000408;
+    }
+    @supports (color: oklch(0% 0 0)) {
+      :root {
+        --bg: oklch(98% 0.005 250); --surface: oklch(100% 0 0); --fg: oklch(22% 0.02 240); --muted: oklch(42% 0.02 240); --border: oklch(90% 0.008 240); --accent: oklch(58% 0.16 145); --success: oklch(40% 0.11 145); --warn: oklch(44% 0.12 75); --danger: oklch(46% 0.16 25); --table: oklch(38% 0.04 250); --view: oklch(38% 0.07 200); --proc: oklch(40% 0.09 75); --java: oklch(36% 0.06 280); --hover: oklch(96% 0.006 250); --press: oklch(93% 0.008 250); --fg-hover: oklch(16% 0.02 240); --fg-press: oklch(10% 0.02 240);
+      }
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; }
+    body {
+      font-family: var(--font-body);
+      background: var(--bg); color: var(--fg);
+      font-size: 14px; line-height: 1.7;
+      min-height: 100vh; min-height: 100dvh; overflow: hidden;
+      color-scheme: light;
+    }
+    button, input, select { font: inherit; color: inherit; }
+    button { cursor: pointer; touch-action: manipulation; }
+    button:disabled { cursor: not-allowed; opacity: 0.45; }
+    .sr-only {
+      position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+      overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+    }
+    .skip {
+      position: absolute; left: -999px; top: 8px; background: var(--fg); color: var(--surface);
+      padding: 8px 12px; z-index: 30; border-radius: var(--radius); font-weight: 510;
+    }
+    .skip:focus { left: 8px; }
+    .app {
+      height: 100vh; height: 100dvh; display: grid;
+      grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+      min-width: 0; overflow: hidden;
+    }
+    .header, .toolbar, .summary, .footer { background: var(--surface); border-bottom: 1px solid var(--border); }
+    .header {
+      display: flex; align-items: center; gap: 12px 16px; flex-wrap: wrap;
+      min-height: 56px; padding: 8px 16px 8px 20px;
+    }
+    .brand { min-width: 0; }
+    .brand-kicker {
+      font-size: 12px; letter-spacing: 0.02em; color: var(--muted); line-height: 1.4; margin: 0;
+    }
+    h1 { margin: 0; font-size: 18px; font-weight: 600; line-height: 1.35; }
+    .seed-wrap, .scale { display: flex; align-items: center; gap: 8px; min-width: 0; }
+    .seed-wrap label, .scale span { font-size: 12px; color: var(--muted); letter-spacing: 0.02em; white-space: nowrap; }
+    select, .search input {
+      height: 44px; padding: 0 10px; border: 1px solid var(--border);
+      border-radius: var(--radius); background: var(--bg); min-width: 0;
+      transition: background 150ms var(--ease), border-color 150ms var(--ease);
+    }
+    #seed { max-width: 280px; }
+    select:hover, .search input:hover { background: var(--hover); }
+    select:focus-visible, .search input:focus-visible, button:focus-visible {
+      outline: 2px solid var(--fg); outline-offset: 2px;
+    }
+    .search { margin-left: auto; position: relative; min-width: 0; }
+    .search input { width: min(280px, 32vw); padding-left: 36px; }
+    .search svg {
+      position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+      width: 16px; height: 16px; color: var(--muted); pointer-events: none;
+    }
+    .hits {
+      position: absolute; right: 0; top: calc(100% + 4px); width: min(400px, 86vw);
+      background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+      box-shadow: 0 12px 32px rgba(14,23,30,0.12); box-shadow: 0 12px 32px oklch(20% 0.02 240 / 0.12); z-index: 12;
+      max-height: 320px; overflow: auto; padding: 4px;
+    }
+    .hits button {
+      display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 8px; align-items: center;
+      width: 100%; text-align: left; padding: 8px 10px; border: 0; background: transparent;
+      min-height: 44px; border-radius: var(--radius);
+    }
+    .hits button:hover, .hits button.is-active { background: var(--hover); }
+    .hits .empty-hit { margin: 0; padding: 14px 12px; font-size: 13px; color: var(--muted); line-height: 1.7; }
+    .toolbar { display: flex; align-items: center; gap: 10px 12px; flex-wrap: wrap; padding: 8px 16px; }
+    .modes { display: flex; padding: 3px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; }
+    .modes button {
+      height: 44px; padding: 0 14px; border: 0; background: transparent;
+      border-radius: 5px; font-size: 13px; font-weight: 510; letter-spacing: 0.02em;
+      transition: background 150ms var(--ease), color 150ms var(--ease);
+    }
+    .modes button:hover { background: var(--hover); color: var(--fg); }
+    .modes button[aria-selected="true"] { background: var(--fg); color: var(--surface); }
+    .modes button[aria-selected="true"]:hover { background: var(--fg-hover); color: var(--surface); }
+    .modes button[aria-selected="true"]:active { background: var(--fg-press); color: var(--surface); }
+    .filters { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-left: auto; }
+    .chip, .seg button, .more, .state-card button, .inspect-toggle {
+      height: 44px; min-height: 44px; padding: 0 12px; border: 1px solid var(--border);
+      border-radius: 999px; background: var(--surface); font-size: 12px; letter-spacing: 0.02em;
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      transition: background 150ms var(--ease), border-color 150ms var(--ease), color 150ms var(--ease);
+    }
+    .chip { background: var(--bg); color: var(--muted); }
+    .chip:hover, .more:hover, .cluster:hover, .inspect-toggle:hover { background: var(--hover); color: var(--fg); }
+    .chip:active, .more:active, .cluster:active { background: var(--press); }
+    .chip[aria-pressed="true"] {
+      background: var(--surface); color: var(--fg); border-color: var(--fg);
+      box-shadow: inset 0 0 0 1px var(--fg);
+    }
+    .chip[aria-pressed="true"]:hover { background: var(--hover); color: var(--fg); }
+    .dot { width: 8px; height: 8px; border-radius: 2px; flex: none; }
+    .dot-table { background: var(--table); } .dot-view { background: var(--view); }
+    .dot-procedure { background: var(--proc); } .dot-java { background: var(--java); }
+    .seg { display: flex; }
+    .seg button { border-radius: 0; }
+    .seg button:first-child { border-radius: 999px 0 0 999px; }
+    .seg button:last-child { border-radius: 0 999px 999px 0; margin-left: -1px; }
+    .seg button:hover { background: var(--hover); color: var(--fg); }
+    .seg button[aria-pressed="true"] { background: var(--fg); color: var(--surface); border-color: var(--fg); z-index: 1; }
+    .seg button[aria-pressed="true"]:hover { background: var(--fg-hover); color: var(--surface); }
+    .seg button[aria-pressed="true"]:active { background: var(--fg-press); color: var(--surface); }
+    .legend {
+      display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center;
+      font-size: 12px; color: var(--muted); letter-spacing: 0.02em; justify-self: end;
+    }
+    .legend i { display: inline-block; width: 22px; height: 0; border-top: 2px solid #81878c; border-top: 2px solid oklch(62% 0.01 240); vertical-align: middle; margin-right: 6px; }
+    .legend .cross-swatch { border-top-style: dashed; border-top-color: #425468; border-top-color: oklch(44% 0.04 250); }
+    .summary {
+      display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 24px; align-items: start;
+      padding: 8px 20px 10px; line-height: 1.7;
+    }
+    .summary p { margin: 0; font-size: 14px; max-width: 72ch; }
+    .summary b { font-weight: 600; }
+    .why { color: var(--muted); font-size: 13px; margin-top: 2px !important; }
+    .body { display: grid; grid-template-columns: minmax(0, 1fr) var(--inspect-w); min-height: 0; min-width: 0; }
+    .stage-wrap { position: relative; min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+    .stage {
+      min-width: 0; min-height: 0; overflow: auto; position: relative; flex: 1;
+      background:
+        linear-gradient(var(--border) 1px, transparent 1px) 0 0 / 28px 28px,
+        linear-gradient(90deg, var(--border) 1px, transparent 1px) 0 0 / 28px 28px,
+        var(--bg);
+    }
+    .stage-inner { position: relative; min-height: 100%; }
+    .canvas-state {
+      position: absolute; inset: 0; display: grid; place-items: center;
+      background: rgba(246,249,252,0.94); background: oklch(98% 0.005 250 / 0.94); z-index: 6; padding: 24px;
+    }
+    .canvas-state[hidden] { display: none !important; }
+    .state-card {
+      width: min(380px, 100%); text-align: center; background: var(--surface);
+      border: 1px solid var(--border); border-radius: 8px; padding: 24px 20px;
+    }
+    .state-card h2 { font-size: 16px; margin: 0 0 8px; line-height: 1.35; font-weight: 600; }
+    .state-card p { margin: 0 0 16px; color: var(--muted); font-size: 13px; line-height: 1.7; }
+    .state-card button { width: 100%; border-radius: var(--radius); background: var(--fg); color: var(--surface); border-color: var(--fg); }
+    .state-card button:hover { background: var(--fg-hover); color: var(--surface); }
+    .state-card button:active { background: var(--fg-press); color: var(--surface); }
+    .state-card .ghost { background: var(--surface); color: var(--fg); border-color: var(--border); margin-top: 8px; }
+    .state-card .ghost:hover { background: var(--hover); color: var(--fg); }
+    .spinner {
+      width: 28px; height: 28px; border: 2px solid var(--border); border-top-color: var(--fg);
+      border-radius: 50%; margin: 0 auto 14px; animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .edge-layer { position: absolute; inset: 0; pointer-events: none; overflow: visible; }
+    .edge { fill: none; stroke: #9fa6aa; stroke: oklch(72% 0.01 240); stroke-width: 1.25; }
+    .edge.calls { stroke-dasharray: 5 4; } .edge.derives { stroke-dasharray: 2 3; }
+    .edge.cross { stroke: #425468; stroke: oklch(44% 0.04 250); stroke-width: 1.35; stroke-dasharray: 4 3.5; }
+    .edge.dim { opacity: 0.22; } .edge.on { stroke: var(--accent); stroke-width: 2; opacity: 1; }
+    .hops { display: grid; gap: 0 12px; padding: 20px 24px 56px; position: relative; z-index: 1; min-width: max-content; }
+    .col { display: flex; flex-direction: column; gap: 8px; min-width: 240px; max-width: 280px; }
+    .col-head {
+      display: flex; align-items: baseline; justify-content: space-between; gap: 8px;
+      padding: 0 4px 8px; border-bottom: 1px solid var(--border);
+    }
+    .col-head .k { font-size: 12px; letter-spacing: 0.02em; color: var(--muted); }
+    .col-head .n { font-variant-numeric: tabular-nums; font-size: 13px; font-weight: 510; }
+    .col.leaf-col { background: #f3f4fd; background: oklch(97% 0.012 280); border-radius: 10px; padding: 8px; }
+    .node, .cluster {
+      display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 8px; align-items: center;
+      width: 100%; text-align: left; padding: 10px; background: var(--surface);
+      border: 1px solid var(--border); border-radius: var(--radius); min-height: 52px;
+      transition: background 150ms var(--ease), border-color 150ms var(--ease);
+    }
+    .cluster { grid-template-columns: minmax(0, 1fr); gap: 6px; border-radius: 10px; min-height: 72px; }
+    .node:hover { background: var(--hover); border-color: #acb9c3; border-color: oklch(78% 0.02 240); }
+    .node:active { background: var(--press); }
+    .node.is-seed { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(41,146,54,0.18); box-shadow: 0 0 0 3px oklch(58% 0.16 145 / 0.18); min-height: 72px; }
+    .node.is-sel { border-color: var(--fg); box-shadow: inset 0 0 0 1px var(--fg); }
+    .node.is-seed.is-sel { box-shadow: 0 0 0 3px rgba(41,146,54,0.18), inset 0 0 0 1px var(--fg); box-shadow: 0 0 0 3px oklch(58% 0.16 145 / 0.18), inset 0 0 0 1px var(--fg); }
+    .node.is-dim { background: var(--bg); }
+    .node.is-dim .node-name, .node.is-dim .node-title { color: var(--muted); }
+    .node-ico { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 4px; color: var(--surface); flex: none; }
+    .node-ico svg { width: 15px; height: 15px; }
+    .t-table { background: var(--table); } .t-view { background: var(--view); }
+    .t-procedure { background: var(--proc); } .t-java { background: var(--java); }
+    .node-copy { min-width: 0; }
+    .node-name {
+      font-family: var(--font-mono); font-size: 12px; font-weight: 500; line-height: 1.45;
+      overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .node-title { display: block; font-size: 12px; color: var(--muted); line-height: 1.45; }
+    .badge {
+      font-size: 12px; letter-spacing: 0.02em; color: var(--muted);
+      border: 1px solid var(--border); border-radius: 999px; padding: 2px 8px; background: var(--bg); white-space: nowrap;
+    }
+    .badge.cross-b { color: var(--fg); border-color: #91a0b1; border-color: oklch(70% 0.03 250); border-style: dashed; }
+    .now { font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; font-family: var(--font-mono); color: var(--accent); font-weight: 600; }
+    .more { width: 100%; justify-content: center; border-style: dashed; border-radius: var(--radius); }
+    .more[aria-expanded="true"] { background: var(--bg); color: var(--fg); border-style: solid; }
+    .cluster-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; min-width: 0; }
+    .cluster-count { font-family: var(--font-mono); font-size: 22px; font-weight: 500; line-height: 1.3; font-variant-numeric: tabular-nums; }
+    .bars { display: flex; height: 8px; border-radius: 99px; overflow: hidden; background: var(--bg); }
+    .bars i { display: block; height: 100%; }
+    .impact { display: grid; grid-template-columns: 220px minmax(0, 1fr) minmax(0, 1fr); min-height: 100%; }
+    .impact-pane { padding: 16px 18px 32px; min-width: 0; }
+    .impact-pane + .impact-pane, .center-card { border-left: 1px solid var(--border); }
+    .impact-pane h2 { margin: 0 0 4px; font-size: 13px; font-weight: 600; line-height: 1.4; }
+    .count-lg { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 28px; line-height: 1.3; font-weight: 500; margin: 0 0 12px; }
+    .group { margin: 0 0 12px; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--surface); }
+    .group h3, .group > button.ghead {
+      margin: 0; width: 100%; display: flex; justify-content: space-between; align-items: center;
+      padding: 10px 12px; min-height: 44px; border: 0; background: transparent; text-align: left;
+      font-size: 12px; letter-spacing: 0.02em; font-weight: 510; border-radius: 0;
+    }
+    .row {
+      display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 8px; align-items: center;
+      width: 100%; padding: 8px 12px; border: 0; border-top: 1px solid var(--border);
+      background: transparent; text-align: left; min-height: 44px; border-radius: 0;
+    }
+    .row:hover, .ghead:hover { background: var(--hover); }
+    .row:active, .ghead:active { background: var(--press); }
+    .row.is-sel { background: #f0f6fc; background: oklch(97% 0.01 250); box-shadow: inset 2px 0 0 var(--fg); }
+    .rel-list .row { grid-template-columns: auto minmax(0, 1fr); }
+    .center-card { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 24px 16px; background: var(--surface); }
+    .center-card .node { width: min(100%, 220px); }
+    .flow-arrow { color: var(--muted); font-size: 12px; margin: 16px 0; }
+    .path-wrap { padding: 20px 28px 48px; max-width: 760px; }
+    .path-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 20px; }
+    .path-bar span, .path-bar label { color: var(--muted); font-size: 12px; }
+    .path-bar select { min-width: min(280px, 100%); }
+    .steps { list-style: none; margin: 0; padding: 0; }
+    .step { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 12px; }
+    .rail { display: flex; flex-direction: column; align-items: center; }
+    .rail i { width: 10px; height: 10px; border-radius: 50%; background: var(--fg); display: block; margin-top: 18px; }
+    .rail i.seed { background: var(--accent); box-shadow: 0 0 0 4px rgba(41,146,54,0.2); box-shadow: 0 0 0 4px oklch(58% 0.16 145 / 0.2); }
+    .rail i.cross { background: #425468; background: oklch(44% 0.04 250); }
+    .rail b { width: 1px; flex: 1; background: var(--border); min-height: 12px; display: block; }
+    .step article { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; margin-bottom: 8px; min-width: 0; }
+    .step article.is-seed { border-color: var(--accent); }
+    .rel-line { font-size: 12px; letter-spacing: 0.02em; color: var(--muted); margin: 0 0 8px; }
+    .inspector-wrap {
+      border-left: 1px solid var(--border); background: var(--surface);
+      min-width: 0; min-height: 0; display: flex; flex-direction: column;
+    }
+    .inspect-bar {
+      display: none; align-items: center; justify-content: space-between; gap: 8px;
+      padding: 8px 12px; min-height: 52px; border-bottom: 1px solid var(--border); flex: none;
+    }
+    .inspect-bar-title { margin: 0; font-size: 14px; font-weight: 600; line-height: 1.35; }
+    .inspect-toggle { flex: none; }
+    .inspector { padding: 16px 16px 24px; overflow: auto; min-height: 0; flex: 1; }
+    .inspector h2 { margin: 0 0 4px; font-size: 16px; font-weight: 600; line-height: 1.4; }
+    .mono { font-family: var(--font-mono); font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
+    .kv { display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 6px 8px; margin: 14px 0; font-size: 13px; }
+    .kv dt { color: var(--muted); } .kv dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+    .rel-list { list-style: none; margin: 0; padding: 0; }
+    .rel-list li { border: 0; }
+    .empty { color: var(--muted); font-size: 13px; line-height: 1.7; }
+    .pill-status { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 999px; font-size: 12px; }
+    .st-verified { background: #e3f4e2; background: oklch(95% 0.03 145); color: var(--success); }
+    .st-inferred { background: #ffefd5; background: oklch(96% 0.04 75); color: var(--warn); }
+    .actions { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
+    .actions button {
+      height: 44px; border: 1px solid var(--border); border-radius: var(--radius);
+      background: var(--bg); letter-spacing: 0.02em;
+      transition: background 150ms var(--ease), color 150ms var(--ease), border-color 150ms var(--ease);
+    }
+    .actions button:hover { background: var(--hover); color: var(--fg); }
+    .actions button:active { background: var(--press); color: var(--fg); }
+    .actions .primary { background: var(--fg); color: var(--surface); border-color: var(--fg); }
+    .actions .primary:hover { background: var(--fg-hover); color: var(--surface); }
+    .actions .primary:active { background: var(--fg-press); color: var(--surface); }
+    .footer {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      min-height: 40px; padding: 6px 16px; border-top: 1px solid var(--border); border-bottom: 0;
+      font-size: 12px; color: var(--muted); letter-spacing: 0.02em;
+    }
+    kbd {
+      font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.06em;
+      border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 3px;
+      padding: 1px 5px; background: var(--bg); color: var(--fg);
+    }
+    @media (max-width: 960px) {
+      .body { grid-template-columns: 1fr; grid-template-rows: minmax(38vh, 1fr) auto; }
+      .inspector-wrap { border-left: 0; border-top: 1px solid var(--border); max-height: 46vh; }
+      .inspector-wrap.is-collapsed { max-height: none; }
+      .inspector-wrap.is-collapsed .inspector { display: none; }
+      .inspect-bar { display: flex; }
+      .impact { grid-template-columns: 1fr; }
+      .impact-pane + .impact-pane, .center-card { border-left: 0; border-top: 1px solid var(--border); }
+      .search { margin-left: 0; width: 100%; order: 5; }
+      .search input { width: 100%; font-size: 16px; }
+      #seed { max-width: none; width: 100%; font-size: 16px; }
+      .seed-wrap { flex: 1 1 180px; }
+      .scale { flex: 1 1 160px; }
+      .summary { grid-template-columns: 1fr; padding: 8px 16px; }
+      .legend { justify-self: start; }
+      .filters { margin-left: 0; }
+      .path-wrap { padding: 16px 16px 32px; }
+    }
+    @media (max-width: 640px) {
+      .modes { width: 100%; }
+      .modes button { flex: 1; padding: 0 8px; font-size: 12px; }
+      .footer { flex-wrap: wrap; height: auto; padding: 8px 16px; }
+      .kbd-help { display: none; }
+      h1 { font-size: 16px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      * { animation: none !important; transition: none !important; }
+      .spinner { border-top-color: var(--fg); }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#stage">跳到血缘画布</a>
+  <div id="live" class="sr-only" aria-live="polite"></div>
+  <div class="app" data-od-id="app">
+    <header class="header" data-od-id="header">
+      <div class="brand">
+        <p class="brand-kicker">下游树 · Java 为终端</p>
+        <h1 data-od-id="title">程序血缘地图</h1>
+      </div>
+      <div class="seed-wrap">
+        <label for="seed">输入表</label>
+        <select id="seed" data-od-id="seed-select" aria-label="选择作为根的表"></select>
+      </div>
+      <div class="scale" role="group" aria-label="示例规模" data-od-id="scale">
+        <span>规模</span>
+        <div class="seg">
+          <button type="button" data-scale="small">16 对象</button>
+          <button type="button" data-scale="large" aria-pressed="true">520 对象</button>
+        </div>
+      </div>
+      <div class="search" data-od-id="search-box">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <input id="q" type="search" placeholder="搜索对象，按 / 聚焦" data-od-id="search" aria-label="搜索对象" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="hits" />
+        <div class="hits" id="hits" role="listbox" aria-label="搜索结果" hidden></div>
+      </div>
+    </header>
+    <div class="toolbar" data-od-id="toolbar">
+      <div class="modes" role="tablist" aria-label="展示方式">
+        <button type="button" role="tab" id="tab-focus" data-mode="focus" aria-selected="true" aria-controls="stage" tabindex="0" data-od-id="mode-focus">下游树</button>
+        <button type="button" role="tab" id="tab-overview" data-mode="overview" aria-selected="false" aria-controls="stage" tabindex="-1" data-od-id="mode-overview">分层总览</button>
+        <button type="button" role="tab" id="tab-impact" data-mode="impact" aria-selected="false" aria-controls="stage" tabindex="-1" data-od-id="mode-impact">影响清单</button>
+        <button type="button" role="tab" id="tab-path" data-mode="path" aria-selected="false" aria-controls="stage" tabindex="-1" data-od-id="mode-path">调用路径</button>
+      </div>
+      <div class="filters" data-od-id="filters">
+        <button type="button" class="chip" data-type="table" aria-pressed="true"><i class="dot dot-table" aria-hidden="true"></i>表</button>
+        <button type="button" class="chip" data-type="view" aria-pressed="true"><i class="dot dot-view" aria-hidden="true"></i>视图</button>
+        <button type="button" class="chip" data-type="procedure" aria-pressed="true"><i class="dot dot-procedure" aria-hidden="true"></i>存储过程</button>
+        <button type="button" class="chip" data-type="java" aria-pressed="true"><i class="dot dot-java" aria-hidden="true"></i>Java 终端</button>
+        <div class="seg" role="group" aria-label="展开深度" id="depth-seg">
+          <button type="button" data-depth="1" aria-pressed="true">1 层</button>
+          <button type="button" data-depth="2">2 层</button>
+          <button type="button" data-depth="99">全部 · 聚类</button>
+        </div>
+      </div>
+    </div>
+    <div class="summary" data-od-id="summary">
+      <div>
+        <p id="lead"></p>
+        <p class="why" id="why"></p>
+      </div>
+      <div class="legend" data-od-id="edge-legend">
+        <span><i aria-hidden="true"></i>实线 · 主依赖</span>
+        <span><i class="cross-swatch" aria-hidden="true"></i>虚线 · 跨支关联</span>
+        <span>Java 只作为叶子</span>
+      </div>
+    </div>
+    <div class="body">
+      <div class="stage-wrap">
+        <main class="stage" id="stage" data-od-id="stage" tabindex="0" role="tabpanel" aria-labelledby="tab-focus"></main>
+        <div class="canvas-state" id="canvas-state" hidden></div>
+      </div>
+      <aside class="inspector-wrap" id="inspector-wrap" data-od-id="inspector">
+        <div class="inspect-bar">
+          <div>
+            <p class="brand-kicker" id="inspect-kicker">对象详情</p>
+            <p class="inspect-bar-title" id="inspect-bar-title">当前表</p>
+          </div>
+          <button type="button" class="inspect-toggle" id="inspect-toggle" aria-expanded="true" aria-controls="inspector">收起</button>
+        </div>
+        <div class="inspector" id="inspector"></div>
+      </aside>
+    </div>
+    <footer class="footer" data-od-id="footer">
+      <span>交易订单域 · 只画下游树 · Java 为终端</span>
+      <span class="kbd-help"><kbd>1</kbd>–<kbd>4</kbd> 视图 · <kbd>/</kbd> 搜索 · 双击表设为根 · <kbd>Esc</kbd> 回到当前表</span>
+    </footer>
+  </div>
+  <script>
+    const TYPES = { table: { label: '表', cls: 't-table' }, view: { label: '视图', cls: 't-view' }, procedure: { label: '存储过程', cls: 't-procedure' }, java: { label: 'Java 程序', cls: 't-java' } };
+    const REL = { reads: '读取', writes: '写入', calls: '调用', derives: '派生' };
+    const STRENGTH = { writes: 3, derives: 2, calls: 1, reads: 0 };
+    const HINTS = {
+      focus: '从输入表往下长树。实线是主依赖，虚线是下游之间的跨支关联。点 +N 展开子节点。',
+      overview: '按层和类型收成簇。最右若全是 Java，即为终端层。',
+      impact: '只清点下游。跨支关联单独一列，避免两条下游链互相看不见。',
+      path: '从当前表走到一个终端（通常是 Java）。路径上的跨支会标出来。'
+    };
+    const ICO = {
+      table: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><rect x="4" y="5" width="16" height="14" rx="1.5"/><path d="M4 10h16M10 5v14"/></svg>',
+      view: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><ellipse cx="12" cy="12" rx="8" ry="4"/><path d="M4 12v3c0 2.2 3.6 4 8 4s8-1.8 8-4v-3"/></svg>',
+      procedure: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M8 7H6a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2M16 7h2a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-2M10 12h4"/></svg>',
+      java: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M8 8l-4 4 4 4M16 8l4 4-4 4M13 6l-2 12"/></svg>'
+    };
+    const CAP = 5;
+    const MODES = ['focus', 'overview', 'impact', 'path'];
+    const CORE = [
+      { id: 'core.t_order', name: 'core.t_order', title: '核心订单表', type: 'table', owner: '核心交易', system: 'Oracle', status: 'verified', named: true, desc: '交易核心库订单主表。选它作根时才会进入下游树。' },
+      { id: 'ods.pay_log', name: 'ods.pay_channel_log', title: '支付渠道日志', type: 'table', owner: '支付中台', system: 'Hive', status: 'verified', named: true, desc: '渠道回调与支付流水。' },
+      { id: 'stg.user_account', name: 'stg.user_account', title: '用户账户暂存', type: 'table', owner: '账户域', system: 'Hive', status: 'verified', named: true, desc: '账户日切片。' },
+      { id: 'dim.merchant', name: 'dim.merchant', title: '商户维表', type: 'table', owner: '商户中心', system: 'Hive', status: 'verified', named: true, desc: '商户主数据，是补全视图的侧输入，不是当前表的下游。' },
+      { id: 'v_active_merchant', name: 'dw.v_active_merchant', title: '活跃商户视图', type: 'view', owner: '商户中心', system: 'Hive', status: 'inferred', named: true, desc: '过滤有效商户。' },
+      { id: 'sp_sync', name: 'dw.sp_sync_order_from_core', title: '核心订单同步', type: 'procedure', owner: '数仓平台', system: 'Oracle SP', status: 'verified', named: true, desc: '从核心库抽取并写入 ODS。' },
+      { id: 'OrderIngestJob', name: 'com.trade.job.OrderIngestJob', title: '订单接入作业', type: 'java', owner: '交易中台', system: 'Spark / Java', status: 'verified', named: true, desc: '读取支付日志的终端作业，不再写出其他表。' },
+      { id: 'ods.trade_order', name: 'ods.trade_order', title: '交易订单表', type: 'table', owner: '交易中台', system: 'Hive', status: 'verified', named: true, desc: '本次地图的输入表，下游树的根。' },
+      { id: 'v_order_enriched', name: 'dw.v_order_enriched', title: '订单补全视图', type: 'view', owner: '数仓平台', system: 'Hive', status: 'verified', named: true, desc: '订单分析入口。GMV 报表服务也会直接读它，形成跨支。' },
+      { id: 'dwd.fact_order', name: 'dwd.fact_order', title: '订单事实表', type: 'table', owner: '数仓平台', system: 'Hive', status: 'verified', named: true, desc: '明细层订单事实。风险日视图也会读它。' },
+      { id: 'sp_mart', name: 'dw.sp_refresh_order_mart', title: '刷新订单集市', type: 'procedure', owner: '数仓平台', system: 'Hive SP', status: 'inferred', named: true, desc: '按日刷新商户 GMV 集市。' },
+      { id: 'sp_risk', name: 'dw.sp_score_order_risk', title: '计算订单风险分', type: 'procedure', owner: '风控', system: 'Hive SP', status: 'verified', named: true, desc: '从 ODS 订单计算风险分，替代 Java 写表。' },
+      { id: 'OrderRiskEngine', name: 'com.risk.engine.OrderRiskEngine', title: '订单风控引擎', type: 'java', owner: '风控', system: 'Java 服务', status: 'verified', named: true, desc: '实时读取 ODS 订单的终端服务，不再写回风险表。' },
+      { id: 'risk.order_score', name: 'risk.order_score', title: '订单风险分', type: 'table', owner: '风控', system: 'Hive', status: 'verified', named: true, desc: '由存储过程写出，供视图和 Java 终端消费。' },
+      { id: 'ads.merchant_gmv', name: 'ads.merchant_gmv', title: '商户 GMV 集市', type: 'table', owner: '分析域', system: 'Hive', status: 'verified', named: true, desc: '面向报表的商户成交汇总。' },
+      { id: 'GmvReportService', name: 'com.bi.GmvReportService', title: 'GMV 报表服务', type: 'java', owner: '分析域', system: 'Java 服务', status: 'inferred', named: true, desc: '终端：读集市，也读补全视图，所以有一条跨支。' },
+      { id: 'v_risk_daily', name: 'dw.v_risk_order_daily', title: '风险订单日视图', type: 'view', owner: '风控', system: 'Hive', status: 'inferred', named: true, desc: '同时读 ODS 订单、事实表和风险分，典型的下游汇合。' }
+    ];
+    const CORE_EDGES = [
+      ['core.t_order','sp_sync','reads'],['sp_sync','ods.trade_order','writes'],
+      ['ods.pay_log','OrderIngestJob','reads'],['stg.user_account','OrderIngestJob','reads'],
+      ['dim.merchant','v_active_merchant','reads'],['v_active_merchant','v_order_enriched','reads'],
+      ['ods.trade_order','v_order_enriched','reads'],['v_order_enriched','dwd.fact_order','derives'],
+      ['dwd.fact_order','sp_mart','reads'],['sp_mart','ads.merchant_gmv','writes'],
+      ['ads.merchant_gmv','GmvReportService','reads'],['v_order_enriched','GmvReportService','reads'],
+      ['ods.trade_order','sp_risk','reads'],['sp_risk','risk.order_score','writes'],
+      ['ods.trade_order','v_risk_daily','reads'],['dwd.fact_order','v_risk_daily','reads'],
+      ['risk.order_score','v_risk_daily','reads'],['ods.trade_order','OrderRiskEngine','reads']
+    ];
+    const TOPICS = ['退款','优惠','运费','发票','评价','物流','售后','会员','积分','券','渠道','门店','直播','广告','库存','结算','分账','补贴','客服','质检'];
+
+    function esc(s) {
+      return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+    function buildGraph(scale) {
+      const nodes = CORE.map((n) => ({ ...n }));
+      const edges = CORE_EDGES.map(([from, to, rel]) => ({ from, to, rel }));
+      if (scale === 'small') return { nodes, edges };
+      const add = (n) => { nodes.push(n); return n.id; };
+      const link = (from, to, rel) => edges.push({ from, to, rel });
+      const fan = (count, make, parent, rel) => {
+        for (let i = 1; i <= count; i++) link(parent, add(make(i)), rel);
+      };
+      const fanIn = (count, make, child, rel) => {
+        for (let i = 1; i <= count; i++) link(add(make(i)), child, rel);
+      };
+      fanIn(24, (i) => ({ id: `core.hist_${i}`, name: `core.t_order_hist_${i}`, title: `核心订单历史分片 ${i}`, type: 'table', owner: '核心交易', system: 'Oracle', status: 'verified', desc: '核心库历史分表。' }), 'sp_sync', 'reads');
+      fanIn(16, (i) => ({ id: `pay.log_${i}`, name: `ods.pay_channel_log_${i}`, title: `支付渠道日志分片 ${i}`, type: 'table', owner: '支付中台', system: 'Hive', status: 'verified', desc: '渠道回调分表。' }), 'OrderIngestJob', 'reads');
+      fanIn(12, (i) => ({ id: `acct_${i}`, name: `stg.user_account_d${i}`, title: `用户账户日切片 ${i}`, type: 'table', owner: '账户域', system: 'Hive', status: 'inferred', desc: '账户日切片。' }), 'OrderIngestJob', 'reads');
+      fanIn(18, (i) => ({ id: `mer_${i}`, name: `dim.merchant_${i}`, title: `商户维表分片 ${i}`, type: 'table', owner: '商户中心', system: 'Hive', status: 'verified', desc: '商户主数据分片。' }), 'v_active_merchant', 'reads');
+      TOPICS.forEach((t, i) => {
+        const v = add({ id: `venr_${i}`, name: `dw.v_order_${i}`, title: `订单${t}补全视图`, type: 'view', owner: '数仓平台', system: 'Hive', status: 'inferred', desc: `从 ODS 订单补全${t}属性。` });
+        link('ods.trade_order', v, 'reads');
+        if (i % 2 === 0) link('v_order_enriched', v, 'reads');
+        const f = add({ id: `fact_${i}`, name: `dwd.fact_order_${i}`, title: `订单${t}事实`, type: 'table', owner: '数仓平台', system: 'Hive', status: 'verified', desc: `${t}主题事实表。` });
+        link(v, f, 'derives');
+        if (i < 6) link(f, 'v_risk_daily', 'reads');
+        const sp = add({ id: `spm_${i}`, name: `dw.sp_mart_${i}`, title: `刷新${t}集市`, type: 'procedure', owner: '数仓平台', system: 'Hive SP', status: i % 3 ? 'verified' : 'inferred', desc: `按日刷新${t}集市。` });
+        link(f, sp, 'reads');
+        for (let k = 1; k <= 4; k++) {
+          const ads = add({ id: `ads_${i}_${k}`, name: `ads.${t}_${k}`, title: `${t}汇总 ${k}`, type: 'table', owner: '分析域', system: 'Hive', status: 'verified', desc: `${t}面向报表的汇总表。` });
+          link(sp, ads, 'writes');
+          if (k === 2) link('dwd.fact_order', ads, 'derives');
+          if (k === 1) {
+            const js = add({ id: `rpt_${i}`, name: `com.bi.${t}ReportService`, title: `${t}报表服务`, type: 'java', owner: '分析域', system: 'Java 服务', status: 'inferred', desc: `读取${t}集市的终端服务。` });
+            link(ads, js, 'reads');
+            if (i % 3 === 0) link(v, js, 'reads');
+          }
+        }
+      });
+      fan(36, (i) => ({ id: `risk_t_${i}`, name: `risk.order_feature_${i}`, title: `风险特征表 ${i}`, type: 'table', owner: '风控', system: 'Hive', status: 'verified', desc: '从风险分派生的特征表。' }), 'risk.order_score', 'derives');
+      fan(24, (i) => ({ id: `risk_v_${i}`, name: `dw.v_risk_${i}`, title: `风险排查视图 ${i}`, type: 'view', owner: '风控', system: 'Hive', status: 'inferred', desc: '风险日视图的主题切片。' }), 'v_risk_daily', 'derives');
+      fan(18, (i) => ({ id: `risk_j_${i}`, name: `com.risk.consumer.FeatureSink${i}`, title: `风险特征消费 ${i}`, type: 'java', owner: '风控', system: 'Java 服务', status: 'verified', desc: '读取风险分的终端。' }), 'risk.order_score', 'reads');
+      fan(28, (i) => ({ id: `dash_${i}`, name: `ads.gmv_board_${i}`, title: `GMV 看板 ${i}`, type: 'view', owner: '分析域', system: 'Hive', status: 'inferred', desc: '经营看板用视图。' }), 'ads.merchant_gmv', 'reads');
+      fan(22, (i) => ({ id: `svc_${i}`, name: `com.bi.BoardService${i}`, title: `看板服务 ${i}`, type: 'java', owner: '分析域', system: 'Java 服务', status: 'inferred', desc: '读取 GMV 集市的终端。' }), 'ads.merchant_gmv', 'reads');
+      fan(40, (i) => ({ id: `factx_${i}`, name: `dwd.fact_order_ext_${i}`, title: `订单扩展事实 ${i}`, type: 'table', owner: '数仓平台', system: 'Hive', status: 'verified', desc: '从订单事实派生的扩展明细。' }), 'dwd.fact_order', 'derives');
+      fan(36, (i) => ({ id: `enr_${i}`, name: `dw.v_order_ext_${i}`, title: `订单扩展视图 ${i}`, type: 'view', owner: '数仓平台', system: 'Hive', status: 'inferred', desc: '补全视图的主题切片。' }), 'v_order_enriched', 'derives');
+      fan(32, (i) => ({ id: `gmvx_${i}`, name: `ads.merchant_gmv_ext_${i}`, title: `GMV 扩展集市 ${i}`, type: 'table', owner: '分析域', system: 'Hive', status: 'verified', desc: '商户 GMV 的渠道/门店切片。' }), 'sp_mart', 'writes');
+      fan(30, (i) => ({ id: `app_${i}`, name: `com.trade.app.OrderQuery${i}`, title: `订单查询服务 ${i}`, type: 'java', owner: '交易中台', system: 'Java 服务', status: 'verified', desc: '在线读取 ODS 订单的终端。' }), 'ods.trade_order', 'reads');
+      return { nodes, edges };
+    }
+
+    const LS = 'lineage-map-v2-tree';
+    const state = {
+      scale: 'large', seed: 'ods.trade_order', mode: 'focus',
+      types: { table: true, view: true, procedure: true, java: true },
+      depth: 1, q: '', sel: 'ods.trade_order',
+      pathTo: 'GmvReportService',
+      expanded: {}, openGroups: {}, openCols: {},
+      inspectOpen: true
+    };
+    let NODES = []; let EDGES = []; let byId = {}; let TREE = null;
+    let hitIndex = -1;
+    let lastAnnounced = '';
+    const mqMobile = window.matchMedia('(max-width: 960px)');
+    try {
+      const saved = JSON.parse(localStorage.getItem(LS) || 'null');
+      if (saved) Object.assign(state, saved, { expanded: saved.expanded || {}, openGroups: saved.openGroups || {}, openCols: saved.openCols || {}, inspectOpen: saved.inspectOpen !== false });
+    } catch (e) {}
+
+    function liveEdges() {
+      return EDGES.filter((e) => byId[e.from] && byId[e.to] && byId[e.from].type !== 'java');
+    }
+    function buildTree(seed) {
+      const usable = liveEdges();
+      const out = {};
+      usable.forEach((e) => { (out[e.from] || (out[e.from] = [])).push(e); });
+      const reach = new Set([seed]);
+      const q = [seed];
+      while (q.length) {
+        const cur = q.shift();
+        (out[cur] || []).forEach((e) => {
+          if (!reach.has(e.to)) { reach.add(e.to); q.push(e.to); }
+        });
+      }
+      const indeg = {};
+      reach.forEach((id) => { indeg[id] = 0; });
+      usable.forEach((e) => {
+        if (reach.has(e.from) && reach.has(e.to)) indeg[e.to]++;
+      });
+      const rank = new Map([[seed, 0]]);
+      const parent = new Map();
+      const parentEdge = new Map();
+      const tq = [];
+      reach.forEach((id) => { if (indeg[id] === 0) tq.push(id); });
+      const seen = new Set();
+      while (tq.length) {
+        const u = tq.shift();
+        if (seen.has(u)) continue;
+        seen.add(u);
+        (out[u] || []).forEach((e) => {
+          if (!reach.has(e.to)) return;
+          const cand = (rank.get(u) || 0) + 1;
+          const prev = rank.get(e.to);
+          const better = prev == null || cand > prev || (cand === prev && STRENGTH[e.rel] > STRENGTH[(parentEdge.get(e.to) || {}).rel]);
+          if (better) { rank.set(e.to, cand); parent.set(e.to, u); parentEdge.set(e.to, e); }
+          indeg[e.to]--;
+          if (indeg[e.to] === 0) tq.push(e.to);
+        });
+      }
+      reach.forEach((id) => { if (!rank.has(id)) rank.set(id, id === seed ? 0 : 1); });
+      const treeKey = new Set();
+      parentEdge.forEach((e) => treeKey.add(e.from + '>' + e.to));
+      const tree = [];
+      const cross = [];
+      usable.forEach((e) => {
+        if (!reach.has(e.from) || !reach.has(e.to) || e.from === e.to) return;
+        (treeKey.has(e.from + '>' + e.to) ? tree : cross).push(e);
+      });
+      const children = {};
+      tree.forEach((e) => { (children[e.from] || (children[e.from] = [])).push(e.to); });
+      const crossOf = {};
+      cross.forEach((e) => {
+        (crossOf[e.from] || (crossOf[e.from] = [])).push(e);
+        (crossOf[e.to] || (crossOf[e.to] = [])).push(e);
+      });
+      return { rank, parent, parentEdge, reach, tree, cross, children, crossOf };
+    }
+    function loadCatalog() {
+      const g = buildGraph(state.scale);
+      NODES = g.nodes; EDGES = g.edges;
+      byId = Object.fromEntries(NODES.map((n) => [n.id, n]));
+      if (!byId[state.seed] || byId[state.seed].type !== 'table') state.seed = 'ods.trade_order';
+      if (!byId[state.sel]) state.sel = state.seed;
+      TREE = buildTree(state.seed);
+      if (!TREE.reach.has(state.sel)) state.sel = state.seed;
+      if (!byId[state.pathTo] || !TREE.reach.has(state.pathTo)) {
+        const java = NODES.find((n) => n.type === 'java' && n.named && TREE.reach.has(n.id));
+        state.pathTo = java ? java.id : state.seed;
+      }
+    }
+    function save() { localStorage.setItem(LS, JSON.stringify(state)); }
+    function typeOn(id) { return byId[id] && state.types[byId[id].type]; }
+    function anyTypeOn() { return Object.values(state.types).some(Boolean); }
+    function queryHit(n) {
+      if (!state.q) return true;
+      const q = state.q.toLowerCase();
+      return n.name.toLowerCase().includes(q) || n.title.includes(state.q) || n.owner.includes(state.q);
+    }
+    function colOf(id) { return TREE.rank.get(id) || 0; }
+    function colLabel(k, list) {
+      if (k === 0) return '当前表';
+      const allJava = list.length && list.every((n) => n.type === 'java');
+      return allJava ? '第 ' + k + ' 层 · 终端' : '第 ' + k + ' 层';
+    }
+    function treePath(id) {
+      const path = [id];
+      const guard = new Set([id]);
+      while (TREE.parent.has(path[0]) && path[0] !== state.seed) {
+        const p = TREE.parent.get(path[0]);
+        if (guard.has(p)) break;
+        guard.add(p); path.unshift(p);
+      }
+      return path;
+    }
+    function visibleIds() {
+      const depth = state.mode === 'overview' && state.depth === 99 ? 99 : state.depth;
+      return NODES.filter((n) => {
+        if (!TREE.reach.has(n.id) || !typeOn(n.id)) return false;
+        const hop = colOf(n.id);
+        if (state.mode === 'focus') {
+          if (hop === 0) return true;
+          if (hop <= depth) return true;
+          const p = TREE.parent.get(n.id);
+          return p && state.expanded[p] && hop <= depth + 2;
+        }
+        return hop <= depth;
+      }).map((n) => n.id);
+    }
+    function childCount(id) {
+      return (TREE.children[id] || []).filter((cid) => typeOn(cid)).length;
+    }
+    function crossCount(id) {
+      return (TREE.crossOf[id] || []).filter((e) => {
+        const other = e.from === id ? e.to : e.from;
+        return typeOn(other);
+      }).length;
+    }
+    function highlightSet() {
+      if (!state.sel || state.sel === state.seed) return null;
+      const s = new Set(treePath(state.sel));
+      (TREE.crossOf[state.sel] || []).forEach((e) => { s.add(e.from); s.add(e.to); });
+      return s;
+    }
+    function counts() {
+      const by = { table: 0, view: 0, procedure: 0, java: 0 };
+      let down = 0, leaves = 0, crossN = TREE.cross.length;
+      TREE.reach.forEach((id) => {
+        if (id === state.seed || !typeOn(id)) return;
+        down++; by[byId[id].type]++;
+        if (byId[id].type === 'java') leaves++;
+      });
+      return { down, leaves, crossN, n: NODES.length, e: liveEdges().length, by };
+    }
+    function announce(msg) {
+      if (msg === lastAnnounced) return;
+      lastAnnounced = msg;
+      document.getElementById('live').textContent = msg;
+    }
+    function stateCard(title, body, action) {
+      const btn = action ? `<button type="button" data-action="${action.value}">${esc(action.label)}</button>` : '';
+      return `<div class="state-card" role="status"><h2>${esc(title)}</h2><p>${esc(body)}</p>${btn}</div>`;
+    }
+    function showCanvasState(html, busy) {
+      const el = document.getElementById('canvas-state');
+      el.hidden = false;
+      el.innerHTML = html;
+      document.getElementById('stage').setAttribute('aria-busy', busy ? 'true' : 'false');
+    }
+    function hideCanvasState() {
+      const el = document.getElementById('canvas-state');
+      el.hidden = true;
+      el.innerHTML = '';
+      document.getElementById('stage').setAttribute('aria-busy', 'false');
+    }
+    function showLoading(msg) {
+      showCanvasState(`<div class="state-card" role="status"><div class="spinner" aria-hidden="true"></div><h2>正在构建下游树</h2><p>${esc(msg)}</p></div>`, true);
+    }
+    function showError(msg) {
+      showCanvasState(
+        stateCard('无法绘制血缘图', msg || '构建下游树时出错。可以重试，或先切回 16 对象样例。', { value: 'retry', label: '重新加载' }) +
+        `<div class="state-card" style="margin-top:8px;padding:0;border:0;background:transparent"><button type="button" class="ghost" data-action="scale-small">切到 16 对象样例</button></div>`,
+        false
+      );
+    }
+    function nodeBtn(n, extra) {
+      const seed = n.id === state.seed; const sel = n.id === state.sel;
+      const hl = highlightSet();
+      const dim = hl && !hl.has(n.id) && !seed;
+      const more = childCount(n.id);
+      const xc = crossCount(n.id);
+      const open = !!state.expanded[n.id];
+      const leaf = n.type === 'java';
+      let badge;
+      if (seed) badge = '<span class="now">当前</span>';
+      else if (more && state.mode === 'focus') badge = `<span class="badge" data-expand="${esc(n.id)}">${open ? '已展开' : '+' + more}</span>`;
+      else if (xc) badge = `<span class="badge cross-b">另 ${xc}</span>`;
+      else if (leaf) badge = '<span class="badge">终端</span>';
+      else badge = `<span class="badge">${TYPES[n.type].label}</span>`;
+      const label = `${n.title} ${n.name}${more ? '，' + more + ' 个子节点' : ''}${xc ? '，另有 ' + xc + ' 条跨支' : ''}`;
+      return `<button type="button" class="node ${extra || ''} ${seed ? 'is-seed' : ''} ${sel ? 'is-sel' : ''} ${dim ? 'is-dim' : ''} ${leaf ? 'is-leaf' : ''}" data-id="${esc(n.id)}" data-od-id="node-${n.id.replace(/[^\w]+/g, '-')}" aria-current="${seed ? 'true' : 'false'}" aria-label="${esc(label)}" title="${esc(n.name)}">
+        <span class="node-ico ${TYPES[n.type].cls}">${ICO[n.type]}</span>
+        <span class="node-copy"><span class="node-name">${esc(n.name)}</span><span class="node-title">${esc(n.title)}</span></span>
+        ${badge}
+      </button>`;
+    }
+    function sliceList(key, list) {
+      const open = !!state.openCols[key];
+      if (open || list.length <= CAP) return { shown: list, rest: 0, open };
+      return { shown: list.slice(0, CAP), rest: list.length - CAP, open };
+    }
+    function edgePath(x1, y1, x2, y2, cross) {
+      if (x2 > x1 + 12) {
+        const dx = Math.max(36, Math.abs(x2 - x1) / 2);
+        return `M ${x1} ${y1} C ${x1 + dx} ${y1}, ${x2 - dx} ${y2}, ${x2} ${y2}`;
+      }
+      const midX = Math.max(x1, x2) + (cross ? 28 : 20);
+      const midY = (y1 + y2) / 2;
+      return `M ${x1} ${y1} C ${midX} ${y1}, ${midX} ${midY}, ${x2} ${y2}`;
+    }
+    function drawEdges(root) {
+      const svg = root.querySelector('svg.edge-layer');
+      if (!svg) return;
+      const inner = root.querySelector('.stage-inner') || root;
+      const vis = new Set(visibleIds());
+      const hl = highlightSet();
+      const pathSet = state.sel ? new Set(treePath(state.sel)) : null;
+      const cr = inner.getBoundingClientRect();
+      const sw = inner.scrollWidth || inner.offsetWidth;
+      const sh = Math.max(inner.scrollHeight, inner.offsetHeight);
+      svg.setAttribute('viewBox', `0 0 ${sw} ${sh}`);
+      svg.setAttribute('width', sw); svg.setAttribute('height', sh);
+      const parts = ['<defs><marker id="arr" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0 0L6 3L0 6Z" fill="#81878c"/></marker></defs>'];
+      const draw = (e, kind) => {
+        if (!vis.has(e.from) || !vis.has(e.to)) return;
+        const a = root.querySelector('[data-id="' + e.from + '"]');
+        const b = root.querySelector('[data-id="' + e.to + '"]');
+        if (!a || !b) return;
+        const ar = a.getBoundingClientRect(); const br = b.getBoundingClientRect();
+        const x1 = ar.right - cr.left; const y1 = ar.top + ar.height / 2 - cr.top;
+        const x2 = br.left - cr.left; const y2 = br.top + br.height / 2 - cr.top;
+        const onPath = pathSet && pathSet.has(e.from) && pathSet.has(e.to) && kind === 'tree';
+        const onCross = hl && kind === 'cross' && (e.from === state.sel || e.to === state.sel);
+        const on = onPath || onCross;
+        parts.push(`<path class="edge ${e.rel} ${kind} ${on ? 'on' : hl ? 'dim' : ''}" d="${edgePath(x1, y1, x2, y2, kind === 'cross')}" marker-end="url(#arr)" />`);
+      };
+      TREE.tree.forEach((e) => draw(e, 'tree'));
+      TREE.cross.forEach((e) => draw(e, 'cross'));
+      svg.innerHTML = parts.join('');
+    }
+    function emptyMap(title, body, action) {
+      return `<div class="stage-inner" style="display:grid;place-items:center;padding:32px">${stateCard(title, body, action)}</div>`;
+    }
+    function renderMap(kind) {
+      if (!anyTypeOn()) {
+        return emptyMap('没有可见对象', '四类对象筛选都已关闭。打开至少一种类型，才能看到这张表的下游。', { value: 'reset-types', label: '显示全部类型' });
+      }
+      const vis = visibleIds();
+      if (!vis.length) {
+        return emptyMap('当前筛选下没有节点', '试试打开被关掉的类型，或把展开深度调到 2 层。', { value: 'reset-types', label: '重置筛选' });
+      }
+      const buckets = new Map();
+      vis.forEach((id) => {
+        const b = colOf(id);
+        if (!buckets.has(b)) buckets.set(b, []);
+        buckets.get(b).push(byId[id]);
+      });
+      const keys = [...buckets.keys()].sort((a, b) => a - b);
+      const cols = keys.map((k) => {
+        const list = buckets.get(k).sort((a, b) => (a.type === 'java') - (b.type === 'java') || a.type.localeCompare(b.type) || a.name.localeCompare(b.name));
+        const allJava = list.length && list.every((n) => n.type === 'java');
+        let body = '';
+        if (kind === 'overview') {
+          const by = { table: [], view: [], procedure: [], java: [] };
+          list.forEach((n) => by[n.type].push(n));
+          body = Object.keys(by).map((t) => {
+            if (!by[t].length) return '';
+            const key = k + ':' + t;
+            const open = !!state.openCols[key];
+            const { shown, rest } = sliceList(key, by[t]);
+            const total = by[t].length;
+            const color = t === 'table' ? 'var(--table)' : t === 'view' ? 'var(--view)' : t === 'procedure' ? 'var(--proc)' : 'var(--java)';
+            const bar = `<div class="bars"><i style="width:100%;background:${color}"></i></div>`;
+            const title = t === 'java' ? '终端 · Java' : TYPES[t].label;
+            if (!open && total > CAP) {
+              return `<button type="button" class="cluster" data-open-col="${esc(key)}" data-od-id="cluster-${k}-${t}" aria-expanded="false">
+                <div class="cluster-top"><span>${esc(colLabel(k, list))} · ${esc(title)}</span><span class="badge">点击展开</span></div>
+                <div class="cluster-count">${total}</div>${bar}
+                <span class="node-title">先看数量，避免 ${total} 个名字同时出现</span>
+              </button>`;
+            }
+            const items = shown.map((n) => nodeBtn(n)).join('');
+            const more = rest ? `<button type="button" class="more" data-open-col="${esc(key)}" aria-expanded="false">其余 ${rest} 个${esc(title)}</button>` : (open && total > CAP ? `<button type="button" class="more" data-open-col="${esc(key)}" aria-expanded="true">收起 ${esc(title)}</button>` : '');
+            return items + more;
+          }).join('');
+        } else {
+          const { shown, rest } = sliceList(String(k), list);
+          body = shown.map((n) => nodeBtn(n)).join('');
+          if (rest) body += `<button type="button" class="more" data-open-col="${k}" aria-expanded="false">本层还有 ${rest} 个对象</button>`;
+          else if (state.openCols[k] && list.length > CAP) body += `<button type="button" class="more" data-open-col="${k}" aria-expanded="true">收起本层</button>`;
+        }
+        return `<section class="col ${allJava ? 'leaf-col' : ''}" data-od-id="col-${k}">
+          <div class="col-head"><span class="k">${esc(colLabel(k, list))}</span><span class="n">${list.length}</span></div>${body}
+        </section>`;
+      }).join('');
+      const style = `grid-template-columns: repeat(${Math.max(keys.length, 1)}, minmax(240px, 1fr));`;
+      return `<div class="stage-inner"><svg class="edge-layer" aria-hidden="true"></svg><div class="hops" style="${style}">${cols}</div></div>`;
+    }
+    function groupList(ids, prefix) {
+      const by = { table: [], view: [], procedure: [], java: [] };
+      ids.forEach((id) => { if (byId[id]) by[byId[id].type].push(byId[id]); });
+      return Object.keys(by).map((t) => {
+        if (!by[t].length) return '';
+        const key = prefix + t;
+        const open = !!state.openGroups[key];
+        const rows = (open || by[t].length <= 8) ? by[t].map((n) => {
+          const hop = colOf(n.id);
+          const xc = crossCount(n.id);
+          const tag = n.type === 'java' ? '终端' : (xc ? '另 ' + xc : hop + ' 层');
+          return `<button type="button" class="row ${n.id === state.sel ? 'is-sel' : ''}" data-id="${esc(n.id)}"><span class="node-ico ${TYPES[t].cls}">${ICO[t]}</span><span class="node-copy"><span class="node-name">${esc(n.name)}</span><span class="node-title">${esc(n.title)}</span></span><span class="badge">${esc(tag)}</span></button>`;
+        }).join('') : '';
+        const title = t === 'java' ? 'Java 终端' : TYPES[t].label;
+        return `<div class="group"><button type="button" class="ghead" data-open-group="${esc(key)}" aria-expanded="${open || by[t].length <= 8}"><span>${esc(title)} · ${by[t].length}</span><span class="badge">${open ? '收起' : '展开清单'}</span></button>${rows}${!open && by[t].length > 8 ? `<p class="empty" style="padding:8px 12px">默认收起，避免一次列出 ${by[t].length} 行。</p>` : ''}</div>`;
+      }).join('');
+    }
+    function renderImpact() {
+      if (!anyTypeOn()) return emptyMap('没有可清点的下游', '类型筛选都已关闭。', { value: 'reset-types', label: '显示全部类型' });
+      const down = [...TREE.reach].filter((id) => id !== state.seed && typeOn(id));
+      const crossed = [...new Set(TREE.cross.flatMap((e) => [e.from, e.to]))].filter((id) => id !== state.seed && typeOn(id));
+      const c = counts(); const seed = byId[state.seed];
+      return `<div class="impact" data-od-id="impact-view">
+        <section class="center-card"><div class="flow-arrow">输入表</div>${nodeBtn(seed)}<div class="flow-arrow">只向下游展开 →</div><p class="empty">Java 程序是叶子，不会再写出表</p></section>
+        <section class="impact-pane"><h2>下游影响</h2><p class="count-lg">${c.down}</p>${groupList(down, 'down:') || '<p class="empty">没有下游对象</p>'}</section>
+        <section class="impact-pane"><h2>跨支关联</h2><p class="count-lg">${c.crossN}</p><p class="empty" style="margin:0 0 12px">两条下游链之间还有边时，会出现在这里，而不是被主树挡住。</p>${groupList(crossed, 'cross:') || '<p class="empty">当前没有跨支关联</p>'}</section>
+      </div>`;
+    }
+    function namedTargets() {
+      return NODES.filter((n) => TREE.reach.has(n.id) && (n.named || n.type === 'java' || n.id === state.sel)).sort((a, b) => (a.type === 'java' ? 0 : 1) - (b.type === 'java' ? 0 : 1) || a.title.localeCompare(b.title, 'zh'));
+    }
+    function shortestDown(from, to) {
+      if (from === to) return [from];
+      const prev = new Map(); const q = [from]; const seen = new Set([from]);
+      const usable = liveEdges().filter((e) => TREE.reach.has(e.from) && TREE.reach.has(e.to));
+      while (q.length) {
+        const cur = q.shift();
+        for (const e of usable) {
+          if (e.from !== cur || seen.has(e.to)) continue;
+          seen.add(e.to); prev.set(e.to, { id: cur, e }); q.push(e.to);
+          if (e.to === to) {
+            const path = [to]; const edges = [];
+            while (path[0] !== from) {
+              const p = prev.get(path[0]);
+              edges.unshift(p.e); path.unshift(p.id);
+            }
+            return { path, edges };
+          }
+        }
+      }
+      return null;
+    }
+    function renderPath() {
+      const opts = namedTargets().map((n) => `<option value="${esc(n.id)}" ${n.id === state.pathTo ? 'selected' : ''}>${n.type === 'java' ? '终端 · ' : ''}${esc(n.title)} · ${esc(n.name)}</option>`).join('');
+      const found = shortestDown(state.seed, state.pathTo);
+      const treeKeys = new Set(TREE.tree.map((e) => e.from + '>' + e.to));
+      const steps = found ? found.path.map((id, i) => {
+        const n = byId[id]; const edge = i ? found.edges[i - 1] : null;
+        const isCross = edge && !treeKeys.has(edge.from + '>' + edge.to);
+        return `<li class="step"><div class="rail"><i class="${id === state.seed ? 'seed' : isCross ? 'cross' : ''}"></i>${i < found.path.length - 1 ? '<b></b>' : ''}</div><div>${edge ? `<p class="rel-line">${isCross ? '跨支 · ' : '主依赖 · '}${REL[edge.rel]}</p>` : '<p class="rel-line">起点 · 当前表</p>'}<article class="${id === state.seed ? 'is-seed' : ''}" data-id="${esc(id)}"><div class="node-name">${esc(n.name)}</div><div class="node-title">${esc(n.title)} · ${TYPES[n.type].label}${n.type === 'java' ? ' · 终端' : ''}</div></article></div></li>`;
+      }).join('') : '';
+      const empty = stateCard('没有通往该对象的下游路径', '请选一个当前表能走到的下游对象，优先选 Java 终端。', null);
+      return `<div class="path-wrap" data-od-id="path-view"><div class="path-bar"><span>从 ${esc(byId[state.seed].name)}</span><label for="path-to">走到</label><select id="path-to">${opts}</select></div>${found ? `<ol class="steps">${steps}</ol>` : empty}</div>`;
+    }
+    function syncInspectBar(n) {
+      document.getElementById('inspect-bar-title').textContent = n.title;
+      document.getElementById('inspect-kicker').textContent = TYPES[n.type].label + (n.type === 'java' ? ' · 终端' : '');
+      const wrap = document.getElementById('inspector-wrap');
+      const btn = document.getElementById('inspect-toggle');
+      wrap.classList.toggle('is-collapsed', mqMobile.matches && !state.inspectOpen);
+      btn.setAttribute('aria-expanded', String(!(mqMobile.matches && !state.inspectOpen)));
+      btn.textContent = (mqMobile.matches && !state.inspectOpen) ? '展开' : '收起';
+    }
+    function renderInspector() {
+      const n = byId[state.sel] || byId[state.seed];
+      syncInspectBar(n);
+      const inTree = (TREE.tree.filter((e) => e.to === n.id));
+      const outTree = (TREE.tree.filter((e) => e.from === n.id));
+      const crosses = TREE.crossOf[n.id] || [];
+      const hop = colOf(n.id);
+      const relItem = (other, prefix) => {
+        if (!byId[other] || !TREE.reach.has(other)) return '';
+        return `<li><button type="button" class="row" data-id="${esc(other)}"><span class="badge">${esc(prefix)}</span><span class="node-copy"><span class="node-name">${esc(byId[other].name)}</span><span class="node-title">${esc(byId[other].title)} · ${TYPES[byId[other].type].label}</span></span></button></li>`;
+      };
+      const show = (arr, pick, prefix) => arr.filter((e) => typeOn(pick(e))).slice(0, 8).map((e) => relItem(pick(e), prefix)).join('');
+      const parent = TREE.parent.get(n.id);
+      document.getElementById('inspector').innerHTML = `
+        <p class="brand-kicker" style="margin:0 0 8px">${TYPES[n.type].label}${n.type === 'java' ? ' · 终端' : ''}</p>
+        <h2>${esc(n.title)}</h2>
+        <p class="mono">${esc(n.name)}</p>
+        <p style="margin:10px 0 0;font-size:13px;line-height:1.7">${esc(n.desc)}</p>
+        <dl class="kv">
+          <dt>位置</dt><dd>${n.id === state.seed ? '根' : '下游第 ' + hop + ' 层'}</dd>
+          <dt>主父节点</dt><dd>${parent && byId[parent] ? esc(byId[parent].name) : '—'}</dd>
+          <dt>系统</dt><dd>${esc(n.system)}</dd>
+          <dt>负责人</dt><dd>${esc(n.owner)}</dd>
+          <dt>状态</dt><dd><span class="pill-status ${n.status === 'verified' ? 'st-verified' : 'st-inferred'}">${n.status === 'verified' ? '已校验' : '推断'}</span></dd>
+        </dl>
+        <p style="margin:0 0 6px;font-size:12px;color:var(--muted)">主依赖 ${inTree.length + outTree.length} · 跨支 ${crosses.length}</p>
+        <ul class="rel-list">${show(inTree, (e) => e.from, '主 ← ')}${show(outTree, (e) => e.to, '主 → ')}${show(crosses, (e) => e.from === n.id ? e.to : e.from, '跨支 ') || '<li class="empty" style="padding:8px 0">没有可见的邻接关系</li>'}</ul>
+        ${n.type === 'java' ? '<p class="empty">Java 是叶子：不写出表，也不调用其他程序。</p>' : ''}
+        <div class="actions">
+          ${n.id !== state.seed && n.type === 'table' ? `<button type="button" class="primary" data-recenter="${esc(n.id)}">把这张表设为根</button>` : ''}
+          ${childCount(n.id) ? `<button type="button" data-expand="${esc(n.id)}" aria-expanded="${!!state.expanded[n.id]}">${state.expanded[n.id] ? '收起子节点' : '展开 +' + childCount(n.id) + ' 子节点'}</button>` : ''}
+        </div>`;
+      announce('已选中 ' + n.title);
+    }
+    function renderHits() {
+      const box = document.getElementById('hits');
+      const input = document.getElementById('q');
+      hitIndex = -1;
+      if (!state.q) { box.hidden = true; box.innerHTML = ''; input.setAttribute('aria-expanded', 'false'); return; }
+      const hits = NODES.filter((n) => queryHit(n) && (TREE.reach.has(n.id) || n.type === 'table')).slice(0, 10);
+      box.hidden = false;
+      input.setAttribute('aria-expanded', 'true');
+      if (!hits.length) {
+        box.innerHTML = `<p class="empty-hit" role="status">没有匹配「${esc(state.q)}」的对象。试试表名、中文标题或负责人。</p>`;
+        return;
+      }
+      box.innerHTML = hits.map((n, i) => `<button type="button" role="option" id="hit-${i}" data-id="${esc(n.id)}"><span class="node-ico ${TYPES[n.type].cls}">${ICO[n.type]}</span><span class="node-copy"><span class="node-name">${esc(n.name)}</span><span class="node-title">${esc(n.title)} · ${esc(n.owner)}${TREE.reach.has(n.id) ? '' : ' · 不在当前下游'}</span></span><span class="badge">${n.type === 'java' ? '终端' : TYPES[n.type].label}</span></button>`).join('');
+    }
+    function moveHit(dir) {
+      const opts = [...document.querySelectorAll('#hits [data-id]')];
+      if (!opts.length) return;
+      hitIndex = (hitIndex + dir + opts.length) % opts.length;
+      opts.forEach((el, i) => el.classList.toggle('is-active', i === hitIndex));
+      opts[hitIndex].scrollIntoView({ block: 'nearest' });
+      document.getElementById('q').setAttribute('aria-activedescendant', opts[hitIndex].id);
+    }
+    function chooseHit() {
+      const opts = [...document.querySelectorAll('#hits [data-id]')];
+      if (!opts.length) return;
+      const el = opts[Math.max(hitIndex, 0)];
+      reveal(el.getAttribute('data-id'));
+      state.q = ''; document.getElementById('q').value = '';
+      document.getElementById('hits').hidden = true;
+      render();
+    }
+    function setMode(mode) {
+      state.mode = mode;
+      document.getElementById('stage').setAttribute('aria-labelledby', 'tab-' + mode);
+      render();
+    }
+    function resetTypes() {
+      state.types = { table: true, view: true, procedure: true, java: true };
+      document.querySelectorAll('.chip[data-type]').forEach((b) => b.setAttribute('aria-pressed', 'true'));
+      render();
+    }
+    function applyScale(scale) {
+      showLoading(scale === 'large' ? '正在准备 520 个对象的下游树，默认只展开 1 层。' : '正在切换到 16 对象样例，便于看清跨支虚线。');
+      window.setTimeout(() => {
+        try {
+          state.scale = scale; state.expanded = {}; state.openCols = {}; state.openGroups = {};
+          state.depth = scale === 'large' ? 1 : 99;
+          loadCatalog(); fillSeed();
+          syncDepthButtons();
+          document.querySelectorAll('[data-scale]').forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.scale === state.scale)));
+          render();
+          hideCanvasState();
+        } catch (err) {
+          showError(String(err && err.message || err));
+        }
+      }, 40);
+    }
+    function render() {
+      save();
+      document.getElementById('why').textContent = HINTS[state.mode];
+      document.querySelectorAll('.modes button').forEach((b) => {
+        const on = b.dataset.mode === state.mode;
+        b.setAttribute('aria-selected', String(on));
+        b.tabIndex = on ? 0 : -1;
+      });
+      const c = counts(); const vis = visibleIds().length;
+      const downParts = Object.entries(c.by).filter(([, n]) => n).map(([t, n]) => `${t === 'java' ? 'Java 终端' : TYPES[t].label} ${n}`).join(' · ');
+      document.getElementById('lead').innerHTML = `以 <b>${esc(byId[state.seed].name)}</b> 为根，只画下游：<b>${c.down}</b> 个对象（${downParts || '无'}），其中 Java 终端 <b>${c.leaves}</b> 个。跨支关联 <b>${c.crossN}</b> 条。当前画出 <b>${vis}</b> 个可见节点。`;
+      const stage = document.getElementById('stage');
+      try {
+        if (state.mode === 'focus') stage.innerHTML = renderMap('focus');
+        else if (state.mode === 'overview') stage.innerHTML = renderMap('overview');
+        else if (state.mode === 'impact') stage.innerHTML = renderImpact();
+        else stage.innerHTML = renderPath();
+        renderInspector(); renderHits();
+        if (state.mode === 'focus' || state.mode === 'overview') requestAnimationFrame(() => drawEdges(stage));
+      } catch (err) {
+        showError(String(err && err.message || err));
+      }
+    }
+    function syncDepthButtons() {
+      document.querySelectorAll('[data-depth]').forEach((x) => x.setAttribute('aria-pressed', String(Number(x.dataset.depth) === state.depth)));
+    }
+    function reveal(id) {
+      if (!byId[id]) return;
+      if (byId[id].type === 'table' && !TREE.reach.has(id) && id !== state.seed) { recenter(id); return; }
+      if (!TREE.reach.has(id)) return;
+      state.sel = id;
+      if (mqMobile.matches) state.inspectOpen = true;
+      const hop = colOf(id);
+      if (state.depth !== 99 && hop > state.depth) {
+        state.depth = hop <= 2 ? hop : 99;
+        if (state.depth === 99) state.mode = 'overview';
+        syncDepthButtons();
+      }
+      treePath(id).forEach((pid) => { if (pid !== id) state.expanded[pid] = true; });
+      state.openCols[String(hop)] = true;
+      state.openCols[hop + ':' + byId[id].type] = true;
+      state.openGroups['down:' + byId[id].type] = true;
+    }
+    function recenter(id) {
+      if (!byId[id] || byId[id].type !== 'table') return;
+      state.seed = id; state.sel = id; state.expanded = {};
+      TREE = buildTree(state.seed);
+      fillSeed(); render();
+    }
+    function fillSeed() {
+      const sel = document.getElementById('seed');
+      sel.innerHTML = '';
+      NODES.filter((n) => n.type === 'table' && (n.named || n.id === state.seed)).forEach((n) => {
+        const o = document.createElement('option');
+        o.value = n.id; o.textContent = `${n.title}  ${n.name}`;
+        if (n.id === state.seed) o.selected = true;
+        sel.appendChild(o);
+      });
+    }
+    function inField(el) {
+      const tag = (el && el.tagName) || '';
+      return tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA' || (el && el.isContentEditable);
+    }
+    let bound = false;
+    function bind() {
+      if (bound) return;
+      bound = true;
+      fillSeed();
+      document.getElementById('seed').addEventListener('change', (e) => recenter(e.target.value));
+      document.getElementById('q').value = state.q;
+      document.getElementById('q').addEventListener('input', (e) => { state.q = e.target.value.trim(); renderHits(); });
+      document.getElementById('hits').addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-id]'); if (!btn) return;
+        reveal(btn.getAttribute('data-id')); state.q = ''; document.getElementById('q').value = '';
+        document.getElementById('hits').hidden = true; render();
+      });
+      document.querySelectorAll('.modes button').forEach((b) => b.addEventListener('click', () => setMode(b.dataset.mode)));
+      document.querySelector('.modes').addEventListener('keydown', (e) => {
+        if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+        e.preventDefault();
+        const i = MODES.indexOf(state.mode);
+        const next = MODES[(i + (e.key === 'ArrowRight' ? 1 : -1) + MODES.length) % MODES.length];
+        setMode(next);
+        document.querySelector(`[data-mode="${next}"]`).focus();
+      });
+      document.querySelectorAll('[data-scale]').forEach((b) => {
+        b.setAttribute('aria-pressed', String(b.dataset.scale === state.scale));
+        b.addEventListener('click', () => applyScale(b.dataset.scale));
+      });
+      document.querySelectorAll('.chip[data-type]').forEach((b) => {
+        b.setAttribute('aria-pressed', String(state.types[b.dataset.type]));
+        b.addEventListener('click', () => { state.types[b.dataset.type] = !state.types[b.dataset.type]; b.setAttribute('aria-pressed', String(state.types[b.dataset.type])); render(); });
+      });
+      document.querySelectorAll('[data-depth]').forEach((b) => {
+        b.setAttribute('aria-pressed', String(Number(b.dataset.depth) === state.depth));
+        b.addEventListener('click', () => {
+          state.depth = Number(b.dataset.depth);
+          if (state.depth === 99 && state.scale === 'large') state.mode = 'overview';
+          syncDepthButtons();
+          render();
+        });
+      });
+      document.getElementById('inspect-toggle').addEventListener('click', () => {
+        state.inspectOpen = !state.inspectOpen;
+        syncInspectBar(byId[state.sel] || byId[state.seed]);
+        save();
+      });
+      const onStage = (e) => {
+        const action = e.target.closest('[data-action]');
+        if (action) {
+          const v = action.getAttribute('data-action');
+          if (v === 'reset-types') resetTypes();
+          else if (v === 'retry') { hideCanvasState(); render(); }
+          else if (v === 'scale-small') applyScale('small');
+          return;
+        }
+        const openCol = e.target.closest('[data-open-col]');
+        if (openCol) { const k = openCol.getAttribute('data-open-col'); state.openCols[k] = !state.openCols[k]; render(); return; }
+        const openG = e.target.closest('[data-open-group]');
+        if (openG) { const k = openG.getAttribute('data-open-group'); state.openGroups[k] = !state.openGroups[k]; render(); return; }
+        const exp = e.target.closest('[data-expand]');
+        if (exp) { const id = exp.getAttribute('data-expand'); state.expanded[id] = !state.expanded[id]; state.sel = id; render(); return; }
+        const rec = e.target.closest('[data-recenter]');
+        if (rec) { recenter(rec.getAttribute('data-recenter')); return; }
+        const btn = e.target.closest('[data-id]');
+        if (!btn) return;
+        state.sel = btn.getAttribute('data-id');
+        if (mqMobile.matches) state.inspectOpen = true;
+        render();
+      };
+      document.getElementById('stage').addEventListener('click', onStage);
+      document.getElementById('inspector').addEventListener('click', onStage);
+      document.getElementById('canvas-state').addEventListener('click', onStage);
+      document.getElementById('stage').addEventListener('dblclick', (e) => {
+        const btn = e.target.closest('[data-id]'); if (!btn) return;
+        const id = btn.getAttribute('data-id');
+        if (byId[id] && byId[id].type === 'table') recenter(id);
+      });
+      document.getElementById('stage').addEventListener('change', (e) => {
+        if (e.target.id === 'path-to') { state.pathTo = e.target.value; render(); }
+      });
+      window.addEventListener('resize', () => {
+        syncInspectBar(byId[state.sel] || byId[state.seed]);
+        if (state.mode === 'focus' || state.mode === 'overview') drawEdges(document.getElementById('stage'));
+      });
+      document.addEventListener('keydown', (e) => {
+        const hitsOpen = !document.getElementById('hits').hidden;
+        if (hitsOpen && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) { e.preventDefault(); moveHit(e.key === 'ArrowDown' ? 1 : -1); return; }
+        if (hitsOpen && e.key === 'Enter' && document.activeElement.id === 'q') { e.preventDefault(); chooseHit(); return; }
+        if (e.key === '/' && !inField(document.activeElement)) {
+          e.preventDefault(); document.getElementById('q').focus();
+        }
+        if (e.key === 'Escape') {
+          const hits = document.getElementById('hits');
+          if (!hits.hidden || state.q) {
+            state.q = ''; document.getElementById('q').value = ''; hits.hidden = true; hits.innerHTML = '';
+            document.getElementById('q').setAttribute('aria-expanded', 'false');
+            return;
+          }
+          if (state.sel !== state.seed) { state.sel = state.seed; render(); }
+        }
+        if (['1', '2', '3', '4'].includes(e.key) && !inField(document.activeElement)) {
+          setMode({ 1: 'focus', 2: 'overview', 3: 'impact', 4: 'path' }[e.key]);
+        }
+      });
+    }
+    try {
+      loadCatalog();
+      bind();
+      render();
+    } catch (err) {
+      bind();
+      showError(String(err && err.message || err));
+    }
+  </script>
+</body>
+</html>

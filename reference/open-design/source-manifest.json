@@ -1,0 +1,150 @@
+{
+  "capturedOn": "2026-09-14",
+  "projectName": "程序血缘地图设计",
+  "files": [
+    {
+      "path": "lineage-map-v2.html",
+      "bytes": 75522,
+      "sha256": "c8fb0d85d7bf732c0debad9e95f1757780d4ff1dae2d67e70698a6cc6521a452",
+      "source": "/Users/cuteyuki/Library/Application Support/Open Design/namespaces/release-stable/data/projects/b9980d96-beae-4205-acd0-07f5cae39c18/lineage-map-v2.html"
+    },
+    {
+      "path": "program-lineage-handoff/LOCKED-RULES.md",
+      "bytes": 2917,
+      "sha256": "259d33989e5c75187497d592ae67e1f2e74ebf7dd373aaa5b1b23fbfe176fe6f",
+      "source": "/Users/cuteyuki/Library/Application Support/Open Design/namespaces/release-stable/data/projects/b9980d96-beae-4205-acd0-07f5cae39c18/program-lineage-handoff/LOCKED-RULES.md"
+    },
+    {
+      "path": "program-lineage-handoff/MANIFEST.txt",
+      "bytes": 471,
+      "sha256": "4340729b84c17e7bf80b81ce032194f82f7bc40d67e97403716d522df3b4475f",
+      "source": "/Users/cuteyuki/Library/Application Support/Open Design/namespaces/release-stable/data/projects/b9980d96-beae-4205-acd0-07f5cae39c18/program-lineage-handoff/MANIFEST.txt"
+    },
+    {
+      "path": "program-lineage-handoff/README.md",
+      "bytes": 1436,
+      "sha256": "fffb7256a0c83087073c1c07c2144cf3d47399924245edd14b99f2f964962651",
+      "source": "/Users/cuteyuki/Library/Application Support/Open Design/namespaces/release-stable/data/projects/b9980d96-beae-4205-acd0-07f5cae39c18/program-lineage-handoff/README.md"
+    },
+    {
+      "path": "program-lineage-handoff/docs/01-overview.md",
+      "bytes": 1967,
+      "sha256": "d4da3d969aef8fe9f54b26561aceedd7a456ffa3bb5b0b58a18c4cd689b34337",
+      "source": "/Users/cuteyuki/Library/Application Support/Open Design/namespaces/release-stable/data/projects/b9980d96-beae-4205-acd0-07f5cae39c18/program-lineage-handoff/docs/01-overview.md"
+    },
+    {
+      "path": "program-lineage-handoff/docs/02-domain.md",
+      "bytes": 2908,
+      "sha256": "5ab7fcc30c0074fa6058d38172ef286996ad824c8ce1a91a108eb6da7baaf393",
+      "source": "/Users/cuteyuki/Library/Application Support/Open Design/namespaces/release-stable/data/projects/b9980d96-beae-4205-acd0-07f5cae39c18/program-lineage-handoff/docs/02-domain.md"
+    },
+    {
+      "path": "program-lineage-handoff/docs/03-api.md",
+      "bytes": 5496,
+      "sha256": "223b6e71f9e530a449bd91ccfc0b4ad32f35de7dcb24c678d6b6208178e884ef",
+      "source": "/Users/cuteyuki/Library/Application Support/Open Design/namespaces/release-stable/data/projects/b9980d96-beae-4205-acd0-07f5cae39c18/program-lineage-handoff/docs/03-api.md"
+    },
+    {
+      "path": "program-lineage-handoff/docs/04-tree-algorithm.md",
+      "bytes": 5473,
+      "sha256": "f25933bdc53c7c11528568d4210e1d63b63d649d2d228b3ac202cf2a1fdaa05b",
+      "source": "/Users/cuteyuki/Library/Application Support/Open Design/namespaces/release-stable/data/projects/b9980d96-beae-4205-acd0-07f5cae39c18/program-lineage-handoff/docs/04-tree-algorithm.md"
+    },
+    {
+      "path": "program-lineage-handoff/docs/05-views-and-state.md",
+      "bytes": 6385,
+      "sha256": "686eb121024119645daf05757dea6ca616a58bcbcd5da810028a7d34e64072c2",
+      "source": "/Users/cuteyuki/Library/Application Support/Open Design/namespaces/release-stable/data/projects/b9980d96-beae-4205-acd0-07f5cae39c18/program-lineage-handoff/docs/05-views-and-state.md"
+    },
+    {
+      "path": "program-lineage-handoff/docs/06-interaction.md",
+      "bytes": 5877,
+      "sha256": "99df5fcc6cff8fbbbb9f8b0c5bd05235db656d231dc3c7c29d1997ecc127e141",
+      "source": "/Users/cuteyuki/Library/Application Support/Open Design/namespaces/release-stable/data/projects/b9980d96-beae-4205-acd0-07f5cae39c18/program-lineage-handoff/docs/06-interaction.md"
+    },
+    {
+      "path": "program-lineage-handoff/docs/07-visual.md",
+      "bytes": 3001,
+      "sha256": "f1502424cabcfb06a1ec2f58d8eb99b5fbda5b933afcb4d0b508329618770afb",
+      "source": "/Users/cuteyuki/Library/Application Support/Open Design/namespaces/release-stable/data/projects/b9980d96-beae-4205-acd0-07f5cae39c18/program-lineage-handoff/docs/07-visual.md"
+    },
+    {
+      "path": "program-lineage-handoff/docs/08-engineering.md",
+      "bytes": 1920,
+      "sha256": "e1a6170e8c1a93ce9f9b8460d3a8bf9a6bff1dc32320c62f81b39e692cb04ea5",
+      "source": "/Users/cuteyuki/Library/Application Support/Open Design/namespaces/release-stable/data/projects/b9980d96-beae-4205-acd0-07f5cae39c18/program-lineage-handoff/docs/08-engineering.md"
+    },
+    {
+      "path": "program-lineage-handoff/fixtures/seed-ods-trade-order.expected.json",
+      "bytes": 2290,
+      "sha256": "a035dc651697917f0e98519beed8828045fe10e0144eea4dbf00232a9fca2f67",
+      "source": "/Users/cuteyuki/Library/Application Support/Open Design/namespaces/release-stable/data/projects/b9980d96-beae-4205-acd0-07f5cae39c18/program-lineage-handoff/fixtures/seed-ods-trade-order.expected.json"
+    },
+    {
+      "path": "program-lineage-handoff/fixtures/small-graph.json",
+      "bytes": 6423,
+      "sha256": "3202aff6db8ea76ddb6a3fb87ddca04f2ac23bdb88f6b6e21b393aa121df9bba",
+      "source": "/Users/cuteyuki/Library/Application Support/Open Design/namespaces/release-stable/data/projects/b9980d96-beae-4205-acd0-07f5cae39c18/program-lineage-handoff/fixtures/small-graph.json"
+    },
+    {
+      "path": "program-lineage-handoff/handbook.html",
+      "bytes": 15401,
+      "sha256": "5ae6f1570ec9c37bcd5a4775992f2974377e05f2902a934d749a80d3d7b440d0",
+      "source": "/Users/cuteyuki/Library/Application Support/Open Design/namespaces/release-stable/data/projects/b9980d96-beae-4205-acd0-07f5cae39c18/program-lineage-handoff/handbook.html"
+    },
+    {
+      "path": "program-lineage-handoff/handbook.html.artifact.json",
+      "bytes": 391,
+      "sha256": "cd351336782b9f0c50916ca73c12d51fa9bdd9adb9314bb3117b0d98481c6464",
+      "source": "/Users/cuteyuki/Library/Application Support/Open Design/namespaces/release-stable/data/projects/b9980d96-beae-4205-acd0-07f5cae39c18/program-lineage-handoff/handbook.html.artifact.json"
+    },
+    {
+      "path": "program-lineage-handoff/prototype/README.md",
+      "bytes": 514,
+      "sha256": "3f894e2a834242fe99523c636948af01c1643f87b6f604fa820933cc662a9eaa",
+      "source": "/Users/cuteyuki/Library/Application Support/Open Design/namespaces/release-stable/data/projects/b9980d96-beae-4205-acd0-07f5cae39c18/program-lineage-handoff/prototype/README.md"
+    },
+    {
+      "path": "program-lineage-handoff/prototype/lineage-map-v2.html",
+      "bytes": 75522,
+      "sha256": "c8fb0d85d7bf732c0debad9e95f1757780d4ff1dae2d67e70698a6cc6521a452",
+      "source": "/Users/cuteyuki/Library/Application Support/Open Design/namespaces/release-stable/data/projects/b9980d96-beae-4205-acd0-07f5cae39c18/program-lineage-handoff/prototype/lineage-map-v2.html"
+    },
+    {
+      "path": "program-lineage-handoff/prototype/lineage-map-v2.html.artifact.json",
+      "bytes": 423,
+      "sha256": "2898d4ae109e9ce3b25f8476b0c6ceee8a066d2a47d3315e3fbc651ced9ad08e",
+      "source": "/Users/cuteyuki/Library/Application Support/Open Design/namespaces/release-stable/data/projects/b9980d96-beae-4205-acd0-07f5cae39c18/program-lineage-handoff/prototype/lineage-map-v2.html.artifact.json"
+    },
+    {
+      "path": "program-lineage-handoff/spec/build-tree.mjs",
+      "bytes": 3974,
+      "sha256": "0aef7ef2152a86f82870b46978c7664dabb7662d7c1626f402055ec598340637",
+      "source": "/Users/cuteyuki/Library/Application Support/Open Design/namespaces/release-stable/data/projects/b9980d96-beae-4205-acd0-07f5cae39c18/program-lineage-handoff/spec/build-tree.mjs"
+    },
+    {
+      "path": "program-lineage-handoff/spec/openapi.yaml",
+      "bytes": 8380,
+      "sha256": "3e375c2352b13b2bb03fc64b399200814556633fa78b367851673565e4240982",
+      "source": "/Users/cuteyuki/Library/Application Support/Open Design/namespaces/release-stable/data/projects/b9980d96-beae-4205-acd0-07f5cae39c18/program-lineage-handoff/spec/openapi.yaml"
+    },
+    {
+      "path": "program-lineage-handoff/spec/tokens.css",
+      "bytes": 1069,
+      "sha256": "3ff7f43b97fddfd276b7e11aba5f78023eb37f3095f1103d8faee4dedb8797de",
+      "source": "/Users/cuteyuki/Library/Application Support/Open Design/namespaces/release-stable/data/projects/b9980d96-beae-4205-acd0-07f5cae39c18/program-lineage-handoff/spec/tokens.css"
+    },
+    {
+      "path": "program-lineage-handoff/spec/types.ts",
+      "bytes": 2402,
+      "sha256": "cc7817842f76f7db8b69ef2a344cb7ca3aec6f64a65b9f0a15f4f4b504c52801",
+      "source": "/Users/cuteyuki/Library/Application Support/Open Design/namespaces/release-stable/data/projects/b9980d96-beae-4205-acd0-07f5cae39c18/program-lineage-handoff/spec/types.ts"
+    },
+    {
+      "path": "program-lineage-handoff/spec/verify-tree.mjs",
+      "bytes": 2748,
+      "sha256": "b15f6dbab9316d6c37f53a1246d33254bd8c6dd49cab061cb24a5255ae7539e8",
+      "source": "/Users/cuteyuki/Library/Application Support/Open Design/namespaces/release-stable/data/projects/b9980d96-beae-4205-acd0-07f5cae39c18/program-lineage-handoff/spec/verify-tree.mjs"
+    }
+  ]
+}

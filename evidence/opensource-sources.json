@@ -1,0 +1,154 @@
+{
+  "research_date": "2026-09-14",
+  "timezone": "Asia/Shanghai",
+  "method": "Official documentation and source inspection; no product runtime or performance validation. Root licenses only, not legal advice.",
+  "pinned_sources": [
+    {
+      "repo": "datahub-project/datahub",
+      "commit": "6ece48b05a2a260e6c9df8aec4be5f7f1e7deca6",
+      "path": "docs/features/feature-guides/lineage.md",
+      "url": "https://github.com/datahub-project/datahub/blob/6ece48b05a2a260e6c9df8aec4be5f7f1e7deca6/docs/features/feature-guides/lineage.md",
+      "sha256": "6736b8fcd369e3e09f02f93bca8351a29cfe7b03ad7eeae1c728245e376678fd",
+      "bytes": 6452
+    },
+    {
+      "repo": "datahub-project/datahub",
+      "commit": "6ece48b05a2a260e6c9df8aec4be5f7f1e7deca6",
+      "path": "LICENSE",
+      "url": "https://github.com/datahub-project/datahub/blob/6ece48b05a2a260e6c9df8aec4be5f7f1e7deca6/LICENSE",
+      "sha256": "f71347a6c0f4b9817938dcd7b0a0c2b871c1fb16e20ab49bb9e597aab4cdb319",
+      "bytes": 11365,
+      "license_header": "Apache-2.0"
+    },
+    {
+      "repo": "open-metadata/OpenMetadata",
+      "commit": "68606d705a225f14dd87847f2be733da5fef38db",
+      "path": "openmetadata-spec/src/main/resources/json/schema/type/entityLineage.json",
+      "url": "https://github.com/open-metadata/OpenMetadata/blob/68606d705a225f14dd87847f2be733da5fef38db/openmetadata-spec/src/main/resources/json/schema/type/entityLineage.json",
+      "sha256": "26f824384fc0e7f3b18b915e57dee5ff364f12227003cf22c256d2efd5c5e3e8",
+      "bytes": 6946
+    },
+    {
+      "repo": "open-metadata/OpenMetadata",
+      "commit": "68606d705a225f14dd87847f2be733da5fef38db",
+      "path": "LICENSE",
+      "url": "https://github.com/open-metadata/OpenMetadata/blob/68606d705a225f14dd87847f2be733da5fef38db/LICENSE",
+      "sha256": "43070e2d4e532684de521b885f385d0841030efa2b1a20bafb76133a5e1379c1",
+      "bytes": 11356,
+      "license_header": "Apache-2.0"
+    },
+    {
+      "repo": "OpenLineage/OpenLineage",
+      "commit": "9ac19298c8ef518ed10c7a3af547c8ac86c2e012",
+      "path": "spec/OpenLineage.md",
+      "url": "https://github.com/OpenLineage/OpenLineage/blob/9ac19298c8ef518ed10c7a3af547c8ac86c2e012/spec/OpenLineage.md",
+      "sha256": "a0f0ec69240ec4fe4159d975517611ea50806930fd6153a956016a8a2764211b",
+      "bytes": 7889
+    },
+    {
+      "repo": "OpenLineage/OpenLineage",
+      "commit": "9ac19298c8ef518ed10c7a3af547c8ac86c2e012",
+      "path": "LICENSE",
+      "url": "https://github.com/OpenLineage/OpenLineage/blob/9ac19298c8ef518ed10c7a3af547c8ac86c2e012/LICENSE",
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+      "bytes": 11357,
+      "license_header": "Apache-2.0"
+    },
+    {
+      "repo": "MarquezProject/marquez",
+      "commit": "180f37b22387146187af1ef0279e3ee1d1ccd789",
+      "path": "LICENSE",
+      "url": "https://github.com/MarquezProject/marquez/blob/180f37b22387146187af1ef0279e3ee1d1ccd789/LICENSE",
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+      "bytes": 11357,
+      "license_header": "Apache-2.0"
+    },
+    {
+      "repo": "xyflow/xyflow",
+      "commit": "0a1f9575b25679f2880175de8d3eae21aedde921",
+      "path": "packages/react/src/types/component-props.ts",
+      "url": "https://github.com/xyflow/xyflow/blob/0a1f9575b25679f2880175de8d3eae21aedde921/packages/react/src/types/component-props.ts",
+      "sha256": "98923588781d65f9655b52adaac51e6008d740a622b909c1a8517a153849e020",
+      "bytes": 26564
+    },
+    {
+      "repo": "xyflow/xyflow",
+      "commit": "0a1f9575b25679f2880175de8d3eae21aedde921",
+      "path": "LICENSE",
+      "url": "https://github.com/xyflow/xyflow/blob/0a1f9575b25679f2880175de8d3eae21aedde921/LICENSE",
+      "sha256": "023119ac20fb1c8c9930abe0bcd196989a1960388529a96fc43cebf96f07c9ff",
+      "bytes": 1073,
+      "license_header": "MIT"
+    },
+    {
+      "repo": "antvis/G6",
+      "commit": "7b7ff8e2b52609486840963dc1608d9f565e7f66",
+      "path": "packages/g6/src/behaviors/collapse-expand.ts",
+      "url": "https://github.com/antvis/G6/blob/7b7ff8e2b52609486840963dc1608d9f565e7f66/packages/g6/src/behaviors/collapse-expand.ts",
+      "sha256": "0608de120812eafc7ea47cbe2029fa6a41df3eea9c7014dd87807c6a1a3d39f5",
+      "bytes": 3587
+    },
+    {
+      "repo": "antvis/G6",
+      "commit": "7b7ff8e2b52609486840963dc1608d9f565e7f66",
+      "path": "LICENSE",
+      "url": "https://github.com/antvis/G6/blob/7b7ff8e2b52609486840963dc1608d9f565e7f66/LICENSE",
+      "sha256": "d296127a77fae081300d5b18fcfa5ccda75cd16670c1b46dc890a8903ca95128",
+      "bytes": 1067,
+      "license_header": "MIT"
+    },
+    {
+      "repo": "MarquezProject/marquez",
+      "commit": "180f37b22387146187af1ef0279e3ee1d1ccd789",
+      "path": "api/src/main/java/marquez/service/LineageService.java",
+      "url": "https://github.com/MarquezProject/marquez/blob/180f37b22387146187af1ef0279e3ee1d1ccd789/api/src/main/java/marquez/service/LineageService.java",
+      "sha256": "2a4864820c6ef4e9cf97bb5ad512f4a4fe6149b2f7d0f8c0695116ed7882b749",
+      "bytes": 11138
+    },
+    {
+      "repo": "MarquezProject/marquez",
+      "commit": "180f37b22387146187af1ef0279e3ee1d1ccd789",
+      "path": "api/src/main/java/marquez/db/LineageDao.java",
+      "url": "https://github.com/MarquezProject/marquez/blob/180f37b22387146187af1ef0279e3ee1d1ccd789/api/src/main/java/marquez/db/LineageDao.java",
+      "sha256": "4b195a7f1c5bae77a9a5e32c596dfaee41f7caafcec2fd6c8cff4a5bf66ee203",
+      "bytes": 11275
+    }
+  ],
+  "web_sources": [
+    {
+      "id": "O1",
+      "url": "https://docs.open-metadata.org/v2.0.x/how-to-guides/data-lineage/explore",
+      "verified_by": "official website read on research date; mutable URL"
+    },
+    {
+      "id": "L2",
+      "url": "https://openlineage.io/docs/spec/object-model/",
+      "verified_by": "official website read on research date; mutable URL"
+    },
+    {
+      "id": "L3",
+      "url": "https://openlineage.io/docs/spec/facets/run-facets/parent_run/",
+      "verified_by": "official website read on research date; mutable URL"
+    },
+    {
+      "id": "M1",
+      "url": "https://marquezproject.ai/docs/api/get-lineage/",
+      "verified_by": "official website read on research date; mutable URL"
+    },
+    {
+      "id": "R2",
+      "url": "https://reactflow.dev/learn/advanced-use/performance",
+      "verified_by": "official website read on research date; mutable URL"
+    },
+    {
+      "id": "R3",
+      "url": "https://reactflow.dev/examples/layout/expand-collapse",
+      "verified_by": "official website read on research date; mutable URL"
+    },
+    {
+      "id": "R4",
+      "url": "https://xyflow.com/pro-license",
+      "verified_by": "official website read on research date; mutable URL"
+    }
+  ]
+}

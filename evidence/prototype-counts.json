@@ -1,0 +1,10 @@
+{
+  "small": {
+    "nodes": 17,
+    "edges": 18
+  },
+  "large": {
+    "nodes": 513,
+    "edges": 557
+  }
+}

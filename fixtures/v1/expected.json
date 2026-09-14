@@ -1,0 +1,73 @@
+{
+  "seedId": "root",
+  "reach": [
+    "root",
+    "view-a",
+    "proc-b",
+    "table-c",
+    "java-j",
+    "proc-s"
+  ],
+  "treeIds": [
+    "e02",
+    "e03",
+    "e04",
+    "e05",
+    "e10"
+  ],
+  "crossIds": [
+    "e01",
+    "e06",
+    "e07",
+    "e11"
+  ],
+  "excludedRelationIds": [
+    "e08",
+    "e09"
+  ],
+  "rank": {
+    "root": 0,
+    "view-a": 1,
+    "proc-b": 2,
+    "table-c": 3,
+    "java-j": 4,
+    "proc-s": 1
+  },
+  "minHops": {
+    "root": 0,
+    "view-a": 1,
+    "proc-b": 2,
+    "table-c": 2,
+    "java-j": 1,
+    "proc-s": 1
+  },
+  "parentEdgeIds": {
+    "view-a": "e02",
+    "proc-b": "e03",
+    "table-c": "e04",
+    "java-j": "e05",
+    "proc-s": "e10"
+  },
+  "stats": {
+    "downstream": 5,
+    "javaTerminals": 1,
+    "leaves": 1,
+    "crossEdges": 4,
+    "byType": {
+      "table": 1,
+      "view": 1,
+      "procedure": 2,
+      "java": 1
+    },
+    "countStatus": "exact"
+  },
+  "pathToJava": {
+    "nodeIds": [
+      "root",
+      "java-j"
+    ],
+    "edgeIds": [
+      "e07"
+    ]
+  }
+}

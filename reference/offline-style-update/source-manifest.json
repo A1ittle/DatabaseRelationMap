@@ -1,0 +1,31 @@
+{
+  "capturedAt": "2026-09-14T10:45:01.649388+08:00",
+  "scope": "用户在 Open Design 中进行的离线样式更新副本；算法与本次原始快照一致，脚本仅箭头填充色有改动。",
+  "files": [
+    {
+      "path": "lineage-map-v2.html",
+      "sha256": "f34db6a11cab8ddb7cabd6544252e3e8b064361ec574a15c726514961bcb1369",
+      "source": "/Users/cuteyuki/Library/Application Support/Open Design/namespaces/release-stable/data/projects/b9980d96-beae-4205-acd0-07f5cae39c18/lineage-map-v2.html"
+    },
+    {
+      "path": "lineage-map.css",
+      "sha256": "e567de0e127fc9c97ff28b6f5f87d8507f641974a3f666e0a7e245f0b68ae090",
+      "source": "/Users/cuteyuki/Library/Application Support/Open Design/namespaces/release-stable/data/projects/b9980d96-beae-4205-acd0-07f5cae39c18/lineage-map.css"
+    },
+    {
+      "path": "program-lineage-handoff/spec/tokens.css",
+      "sha256": "a31abc80479b4a8625f951ea1940b96c9e7ea0e386989907be53faadec2fef55",
+      "source": "/Users/cuteyuki/Library/Application Support/Open Design/namespaces/release-stable/data/projects/b9980d96-beae-4205-acd0-07f5cae39c18/program-lineage-handoff/spec/tokens.css"
+    },
+    {
+      "path": "program-lineage-handoff/docs/07-visual.md",
+      "sha256": "745ae265aa62906fdf3d95923bd4df677b7f95234118e29b71cf009bafbe0ee4",
+      "source": "/Users/cuteyuki/Library/Application Support/Open Design/namespaces/release-stable/data/projects/b9980d96-beae-4205-acd0-07f5cae39c18/program-lineage-handoff/docs/07-visual.md"
+    },
+    {
+      "path": "program-lineage-handoff/docs/08-engineering.md",
+      "sha256": "7baf06497ed1d7467e8c2fff6134913b72f5c72ff8195996a59c4b34d4cc2f32",
+      "source": "/Users/cuteyuki/Library/Application Support/Open Design/namespaces/release-stable/data/projects/b9980d96-beae-4205-acd0-07f5cae39c18/program-lineage-handoff/docs/08-engineering.md"
+    }
+  ]
+}

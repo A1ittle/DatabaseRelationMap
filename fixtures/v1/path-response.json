@@ -1,0 +1,51 @@
+{
+  "meta": {
+    "requestId": "request-demo",
+    "queryId": "query-demo",
+    "snapshotId": "snapshot-demo",
+    "coverage": "complete",
+    "computationStatus": "complete",
+    "treeStatus": "available",
+    "algorithmVersion": "lineage-tree-v1",
+    "expiresAt": "2026-09-14T01:00:00Z"
+  },
+  "status": "found",
+  "nodes": [
+    {
+      "id": "root",
+      "type": "table",
+      "namespace": "demo/prod/core",
+      "technicalName": "root",
+      "displayName": "root",
+      "system": "demo",
+      "owner": null,
+      "javaKind": null
+    },
+    {
+      "id": "java-j",
+      "type": "java",
+      "namespace": "demo/prod/core",
+      "technicalName": "java-j",
+      "displayName": "java-j",
+      "system": "demo",
+      "owner": null,
+      "javaKind": "class"
+    }
+  ],
+  "edges": [
+    {
+      "relation": {
+        "id": "e07",
+        "source": "root",
+        "target": "java-j",
+        "rel": "reads",
+        "sourceOrder": 0,
+        "evidenceIds": [
+          "ev-demo"
+        ]
+      },
+      "kind": "cross"
+    }
+  ],
+  "reason": null
+}
