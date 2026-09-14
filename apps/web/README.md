@@ -1,16 +1,16 @@
 # lineage-web
 
-P3 Vue 2 embedded shell for 程序血缘地图: search → create query → default
-one-level downstream tree → node detail → children pagination → full
-projection replace → cross-list locate → change-root → drawn stats → budget
-keep-old. No React Flow (ADR 0001); expandable tree + detail / cross panels.
-Graph layout (`src/graph/*`) is separate from API/domain.
+P4 Vue 2 embedded shell for 程序血缘地图: search → create query → four views
+(tree / overview / impact / path) + URL restore. P3 tree / detail / cross /
+budget keep-old still work. No React Flow (ADR 0001). Graph layout
+(`src/graph/*`) is separate from API/domain. Lists and paths always come from
+their APIs, never from the on-screen tree.
 
 ```bash
 npm install
 npm run generate:api  # spec/v1/openapi.json → src/generated/openapi.d.ts
 npm run dev           # http://127.0.0.1:5173
-npm run test          # vitest (revision, budget keep-old, cross list, layout)
+npm run test          # vitest (URL encode/decode, view-state, revision, budget)
 npm run build
 ```
 
@@ -26,6 +26,34 @@ intentionally not included.
 | `VITE_EMBED_GROUPS` | *(omit)* | Optional `X-Embed-Groups` (host-trusted groups; deny wins on the API). |
 
 Copy `.env.example` to `.env.local` to override. Do not commit secrets.
+
+### URL contract (search params)
+
+The shell encodes workspace state in **query search params** (not the hash).
+`queryId` is a session credential and is **never** written to the URL. On load
+the page recreates the query from `seedId` (optional `snapshotId`) and
+**re-fetches** the active view from the API — it does not restore a cached
+screen graph. Opaque pagination cursors are not persisted (reload starts at
+the first page).
+
+| Param | Values | Restore |
+|---|---|---|
+| `mode` | `tree` (default, omitted) · `overview` · `impact` · `path` | Selects the tab and loads that view's API |
+| `seedId` | object id | `POST /api/lineage/queries` with this seed |
+| `snapshotId` | snapshot id | Passed on create; omit = latest published |
+| `selectedId` | object id | After the query exists, `GET .../nodes/{id}` (and may `POST projection` with `revealSelectedPath` if the object is not on the default canvas) |
+| `targetId` | object id | Path view: `GET .../path?targetId=` |
+| `types` | comma list `table,view,procedure,java` | Overview / impact filter; omit = all four types |
+
+Example:
+
+```text
+/?mode=path&seedId=root&snapshotId=snap-1&selectedId=view-a&targetId=java-j&types=table,java
+```
+
+Keyboard: view tabs are a `tablist` (Tab moves focus; ←/→ or Home/End change
+view). Long names use CSS ellipsis plus a `title` tooltip. Below 960px the
+workspace stacks panels.
 
 ### Manual demo (>3 layers)
 
@@ -54,6 +82,15 @@ Needs a running API with `fixtures/v1/import.json` imported and published
 8. If projection returns `PROJECTION_LIMIT` (API 4xx when the visible set would
    exceed 200 objects or 2000 relations), the previous canvas is **kept** and
    the banner reads **超预算，已保留原图**. Edges are never dropped silently.
+
+9. **四视图**: tabs 树/图 · 总览 · 影响清单 · 最短路径. Overview clusters are
+   layer×type **count only** (members via the members API; locating a member
+   selects it and may request projection — no invented edges). Impact is the
+   independent paginated impact API (full reach), never the drawn tree.
+   Path shows hops/relations from the path API; evidence `sourceRef` is
+   copyable text only (no HTML). Cycle queries (`treeStatus=unavailable_cycle`)
+   show **检测到循环依赖，已切换关系清单**; the tree tab is unavailable, list/path
+   remain.
 
 Without a UI, the same expand path can be curled:
 

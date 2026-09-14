@@ -1,0 +1,43 @@
+command: npm test && npm run build
+cwd: apps/web
+started: 2026-09-14T15:23:58Z
+node: v22.23.2 npm: 10.9.8
+note: P4 four views (tree/overview/impact/path) + URL restore. No React Flow. No OIDC. queryId is not encoded in the URL. Lists/paths are not derived from the drawn tree. Fixtures are not real lineage.
+----- stdout -----
+
+> lineage-web@0.0.0 test
+> vitest run
+
+
+ RUN  v1.6.1 /workspace/DatabaseRelationMap/apps/web
+
+ ✓ src/url/viewState.test.js  (9 tests)
+ ✓ src/graph/revision.test.js  (4 tests)
+ ✓ src/graph/treeFromProjection.test.js  (2 tests)
+ ✓ src/graph/layout.test.js  (1 test)
+ ✓ src/graph/crossList.test.js  (2 tests)
+ ✓ src/api/lineageClient.test.js  (5 tests)
+ ✓ src/graph/projectionSession.test.js  (3 tests)
+ ✓ src/config.test.js  (2 tests)
+ ✓ src/graph/drawnStats.test.js  (2 tests)
+
+ Test Files  9 passed (9)
+      Tests  30 passed (30)
+   Duration  505ms
+
+
+> lineage-web@0.0.0 build
+> vite build
+
+vite v4.5.14 building for production...
+transforming...
+✓ 34 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.45 kB │ gzip:  0.33 kB
+dist/assets/index-e9e97e3a.css    6.64 kB │ gzip:  1.98 kB
+dist/assets/index-2e141f7b.js   118.52 kB │ gzip: 39.37 kB
+✓ built in 718ms
+----- end -----
+exit_code: 0
+finished: 2026-09-14T15:26:11Z

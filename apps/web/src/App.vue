@@ -3,7 +3,7 @@
     <header class="header">
       <div class="brand">
         <h1>程序血缘地图</h1>
-        <p class="kicker">嵌入式下游树 · 非独立产品壳</p>
+        <p class="kicker">嵌入式四视图 · 非独立产品壳</p>
       </div>
       <form class="search" @submit.prevent="runSearch">
         <input
@@ -29,7 +29,7 @@
         class="hit"
         @click="pickHit(hit)"
       >
-        <span class="name">{{ hit.object.displayName || hit.object.technicalName }}</span>
+        <span class="name truncate" :title="hit.object.displayName || hit.object.technicalName">{{ hit.object.displayName || hit.object.technicalName }}</span>
         <span class="badge type" :class="'type-' + hit.object.type">{{ hit.object.type }}</span>
         <span class="badge quiet">{{ hit.action }}</span>
         <span class="mono muted">{{ hit.object.id }}</span>
@@ -47,24 +47,73 @@
       <button type="button" class="ghost" :disabled="!canChangeRoot" @click="changeRoot">换根</button>
     </section>
 
-    <div class="workspace">
-      <lineage-tree
-        :key="'tree-' + viewNonce"
-        :index="index"
-        :roots="roots"
-        :expanded="expanded"
+    <view-tabs v-if="meta" v-model="mode" :disabled="!queryId" />
+    <type-filter v-if="meta && (mode === 'overview' || mode === 'impact')" v-model="filterTypes" />
+
+    <div class="workspace" :class="'mode-' + mode">
+      <template v-if="mode === 'tree'">
+        <div v-if="treeIsUnavailable" class="tree-panel">
+          <div class="panel-head">下游主树</div>
+          <p class="hint">{{ cycleHint }}</p>
+        </div>
+        <lineage-tree
+          v-else
+          :key="'tree-' + viewNonce"
+          :index="index"
+          :roots="roots"
+          :expanded="expanded"
+          :selected-id="selectedId"
+          :child-pages="childPages"
+          @select="selectNode"
+          @toggle="toggleExpand"
+          @more="loadMoreChildren"
+        />
+        <cross-panel
+          v-if="meta"
+          :edges="crossEdges"
+          :selected-id="selectedId"
+          :nodes-by-id="index.nodesById"
+          @locate="locateCross"
+        />
+      </template>
+      <overview-view
+        v-else-if="mode === 'overview'"
+        :clusters="overviewClusters"
+        :page="overviewPage"
+        :loading="overviewLoading"
+        :selected-cluster-id="selectedClusterId"
+        :members="clusterMembers"
+        :members-page="membersPage"
+        :members-loading="membersLoading"
         :selected-id="selectedId"
-        :child-pages="childPages"
-        @select="selectNode"
-        @toggle="toggleExpand"
-        @more="loadMoreChildren"
+        @open-cluster="openCluster"
+        @more-clusters="loadOverview(true)"
+        @more-members="loadMembers(true)"
+        @locate-member="locateMember"
       />
-      <cross-panel
-        v-if="meta"
-        :edges="crossEdges"
+      <impact-view
+        v-else-if="mode === 'impact'"
+        :items="impactItems"
+        :page="impactPage"
+        :loading="impactLoading"
         :selected-id="selectedId"
-        :nodes-by-id="index.nodesById"
-        @locate="locateCross"
+        @select="selectFromList"
+        @more="loadImpact(true)"
+      />
+      <path-view
+        v-else-if="mode === 'path'"
+        :target-id="targetId"
+        :selected-id="selectedId"
+        :path="pathResult"
+        :loading="pathLoading"
+        :evidence-relation-id="evidenceRelationId"
+        :evidence-items="evidenceItems"
+        :evidence-loading="evidenceLoading"
+        @update-target="targetId = $event"
+        @submit="runPath"
+        @use-selected="useSelectedAsTarget"
+        @select="selectFromList"
+        @evidence="loadEvidence"
       />
       <detail-panel
         :detail="detail"
@@ -91,9 +140,23 @@ import {
   findRoots,
   mergeCandidateIds
 } from './graph/treeFromProjection.js'
+import {
+  ALL_TYPES,
+  cycleNotice,
+  isAllTypes,
+  parseViewState,
+  serializeViewState,
+  treeUnavailable,
+  viewStateFromApp
+} from './url/viewState.js'
 import LineageTree from './components/LineageTree.vue'
 import CrossPanel from './components/CrossPanel.vue'
 import DetailPanel from './components/DetailPanel.vue'
+import ViewTabs from './components/ViewTabs.vue'
+import TypeFilter from './components/TypeFilter.vue'
+import OverviewView from './components/OverviewView.vue'
+import ImpactView from './components/ImpactView.vue'
+import PathView from './components/PathView.vue'
 
 var emptyIndex = indexProjection({ nodes: [], edges: [] })
 
@@ -106,7 +169,16 @@ function freshAbort() {
 
 export default {
   name: 'App',
-  components: { LineageTree, CrossPanel, DetailPanel },
+  components: {
+    LineageTree,
+    CrossPanel,
+    DetailPanel,
+    ViewTabs,
+    TypeFilter,
+    OverviewView,
+    ImpactView,
+    PathView
+  },
   data: function () {
     return {
       q: '',
@@ -129,10 +201,35 @@ export default {
       revision: createRevisionGuard(),
       searchSeq: 0,
       detailSeq: 0,
+      overviewSeq: 0,
+      impactSeq: 0,
+      pathSeq: 0,
+      membersSeq: 0,
+      evidenceSeq: 0,
       projectInFlight: false,
       pins: [],
       abortCtl: freshAbort(),
-      viewNonce: 0
+      viewNonce: 0,
+      mode: 'tree',
+      filterTypes: ALL_TYPES.slice(),
+      targetId: '',
+      syncingUrl: false,
+      restoringUrl: false,
+      overviewClusters: [],
+      overviewPage: null,
+      overviewLoading: false,
+      selectedClusterId: null,
+      clusterMembers: [],
+      membersPage: null,
+      membersLoading: false,
+      impactItems: [],
+      impactPage: null,
+      impactLoading: false,
+      pathResult: null,
+      pathLoading: false,
+      evidenceRelationId: null,
+      evidenceItems: [],
+      evidenceLoading: false
     }
   },
   computed: {
@@ -159,11 +256,133 @@ export default {
         return false
       }
       return true
+    },
+    treeIsUnavailable: function () {
+      return !!(this.meta && treeUnavailable(this.meta.treeStatus))
+    },
+    cycleHint: function () {
+      return cycleNotice(this.meta && this.meta.treeStatus) || '主树分类不可用。请使用影响清单或最短路径。'
+    }
+  },
+  watch: {
+    mode: function () {
+      this.fetchActiveView()
+      this.writeUrl()
+    },
+    filterTypes: {
+      deep: true,
+      handler: function () {
+        if (this.mode === 'overview') {
+          this.loadOverview(false)
+        } else if (this.mode === 'impact') {
+          this.loadImpact(false)
+        }
+        this.writeUrl()
+      }
+    },
+    selectedId: function () {
+      this.writeUrl()
+    },
+    targetId: function () {
+      this.writeUrl()
+    },
+    seedId: function () {
+      this.writeUrl()
+    }
+  },
+  created: function () {
+    this.restoreFromUrl()
+  },
+  mounted: function () {
+    if (typeof window !== 'undefined') {
+      this._onPopState = this.restoreFromUrl.bind(this)
+      window.addEventListener('popstate', this._onPopState)
+    }
+  },
+  beforeDestroy: function () {
+    if (typeof window !== 'undefined' && this._onPopState) {
+      window.removeEventListener('popstate', this._onPopState)
     }
   },
   methods: {
     abortSignal: function () {
       return this.abortCtl && this.abortCtl.signal
+    },
+    typeQuery: function () {
+      if (isAllTypes(this.filterTypes)) {
+        return undefined
+      }
+      return this.filterTypes.slice()
+    },
+    writeUrl: function () {
+      if (this.syncingUrl || this.restoringUrl) {
+        return
+      }
+      if (typeof window === 'undefined' || !window.history || !window.history.replaceState) {
+        return
+      }
+      var qs = serializeViewState(viewStateFromApp(this))
+      var next = window.location.pathname + (qs ? '?' + qs : '') + (window.location.hash || '')
+      var cur = window.location.pathname + window.location.search + (window.location.hash || '')
+      if (next !== cur) {
+        window.history.replaceState(null, '', next)
+      }
+    },
+    restoreFromUrl: function () {
+      if (typeof window === 'undefined') {
+        return
+      }
+      var state = parseViewState(window.location.search)
+      this.syncingUrl = true
+      this.mode = state.mode
+      this.filterTypes = state.types.slice()
+      this.targetId = state.targetId || ''
+      var seed = state.seedId
+      var selected = state.selectedId
+      var snap = state.snapshotId
+      if (seed && seed !== this.seedId) {
+        this.createQuery(seed, snap, { restoreSelectedId: selected, restoringUrl: true })
+        return
+      }
+      if (selected && selected !== this.selectedId) {
+        this.selectFromList(selected)
+      }
+      this.fetchActiveView()
+      var self = this
+      this.$nextTick(function () {
+        self.syncingUrl = false
+        self.writeUrl()
+      })
+    },
+    fetchActiveView: function () {
+      if (!this.queryId) {
+        return
+      }
+      if (this.mode === 'overview') {
+        this.loadOverview(false)
+      } else if (this.mode === 'impact') {
+        this.loadImpact(false)
+      } else if (this.mode === 'path') {
+        var t = (this.targetId || '').trim() || this.selectedId
+        if (t) {
+          if (!this.targetId) {
+            this.targetId = t
+          }
+          this.runPath(t)
+        }
+      }
+    },
+    resetAuxViews: function () {
+      this.overviewClusters = []
+      this.overviewPage = null
+      this.selectedClusterId = null
+      this.clusterMembers = []
+      this.membersPage = null
+      this.impactItems = []
+      this.impactPage = null
+      this.pathResult = null
+      this.evidenceRelationId = null
+      this.evidenceItems = []
     },
     cancelInFlight: function () {
       if (this.abortCtl && this.abortCtl.abort) {
@@ -176,6 +395,11 @@ export default {
       this.abortCtl = freshAbort()
       this.searchSeq += 1
       this.detailSeq += 1
+      this.overviewSeq += 1
+      this.impactSeq += 1
+      this.pathSeq += 1
+      this.membersSeq += 1
+      this.evidenceSeq += 1
       this.projectInFlight = false
     },
     runSearch: function () {
@@ -227,15 +451,20 @@ export default {
       }
       this.createQuery(hit.object.id)
     },
-    createQuery: function (seedId) {
+    createQuery: function (seedId, snapshotId, opts) {
       var self = this
+      opts = opts || {}
       this.cancelInFlight()
       this.error = ''
       this.notice = ''
+      this.resetAuxViews()
       this.revision.reset()
       var sentEpoch = this.revision.epoch()
+      var restoringUrl = !!opts.restoringUrl
+      var restoreSelectedId = opts.restoreSelectedId || null
+      this.restoringUrl = restoringUrl
       lineageClient
-        .createQuery(seedId, null, { signal: this.abortSignal() })
+        .createQuery(seedId, snapshotId || null, { signal: this.abortSignal() })
         .then(function (res) {
           if (sentEpoch !== self.revision.epoch()) {
             return
@@ -248,6 +477,14 @@ export default {
           self.pins = []
           self.candidateIds = []
           self.viewNonce += 1
+          var treeStatus = res.meta && res.meta.treeStatus
+          var cyc = cycleNotice(treeStatus)
+          if (cyc) {
+            self.notice = cyc
+            if (!restoringUrl && self.mode === 'tree') {
+              self.mode = 'impact'
+            }
+          }
           var initialRev = 0
           if (res.projection && res.projection.clientRevision != null) {
             initialRev = res.projection.clientRevision
@@ -263,8 +500,17 @@ export default {
           if (sid) {
             self.$set(self.expanded, sid, true)
             self.primeChildren(sid)
-            self.selectNode(sid)
           }
+          var selectId = restoreSelectedId || sid
+          if (selectId && selectId !== sid) {
+            self.ensureCandidateAndSelect(selectId, true)
+          } else if (selectId) {
+            self.selectNode(selectId)
+          }
+          self.fetchActiveView()
+          self.restoringUrl = false
+          self.syncingUrl = false
+          self.writeUrl()
         })
         .catch(function (err) {
           if (isAbortError(err)) {
@@ -272,12 +518,17 @@ export default {
           }
           self.error = (err && err.message) || '创建查询失败'
         })
+        .then(function () {
+          self.restoringUrl = false
+          self.syncingUrl = false
+        })
     },
     changeRoot: function () {
       if (!this.canChangeRoot) {
         return
       }
-      this.createQuery(this.selectedId)
+      var snap = this.meta && this.meta.snapshotId
+      this.createQuery(this.selectedId, snap)
     },
     commitProjectionResult: function (input) {
       var outcome = resolveProjectionOutcome({
@@ -510,6 +761,208 @@ export default {
             self.detailLoading = false
           }
         })
+    },
+    selectFromList: function (id) {
+      this.selectNode(id)
+    },
+    locateMember: function (id) {
+      this.ensureCandidateAndSelect(id, !this.index.nodesById[id])
+    },
+    openCluster: function (cluster) {
+      if (!cluster || !cluster.id) {
+        return
+      }
+      this.selectedClusterId = cluster.id
+      this.clusterMembers = []
+      this.membersPage = null
+      this.loadMembers(false)
+    },
+    loadOverview: function (append) {
+      var self = this
+      if (!this.queryId) {
+        return
+      }
+      if (!append) {
+        this.overviewClusters = []
+        this.overviewPage = null
+        this.selectedClusterId = null
+        this.clusterMembers = []
+      }
+      var extra = { limit: 50, signal: this.abortSignal() }
+      if (append && this.overviewPage && this.overviewPage.nextCursor) {
+        extra.cursor = this.overviewPage.nextCursor
+      }
+      var types = this.typeQuery()
+      if (types) {
+        extra.types = types
+      }
+      var seq = ++this.overviewSeq
+      this.overviewLoading = true
+      lineageClient
+        .overview(this.queryId, extra)
+        .then(function (res) {
+          if (seq !== self.overviewSeq) {
+            return
+          }
+          var items = (res && res.items) || []
+          self.overviewClusters = append ? self.overviewClusters.concat(items) : items
+          self.overviewPage = (res && res.page) || { nextCursor: null, hasMore: false, total: null }
+        })
+        .catch(function (err) {
+          if (seq !== self.overviewSeq || isAbortError(err)) {
+            return
+          }
+          self.error = (err && err.message) || '加载总览失败'
+        })
+        .then(function () {
+          if (seq === self.overviewSeq) {
+            self.overviewLoading = false
+          }
+        })
+    },
+    loadMembers: function (append) {
+      var self = this
+      if (!this.queryId || !this.selectedClusterId) {
+        return
+      }
+      var extra = { limit: 50, signal: this.abortSignal() }
+      if (append && this.membersPage && this.membersPage.nextCursor) {
+        extra.cursor = this.membersPage.nextCursor
+      }
+      var seq = ++this.membersSeq
+      this.membersLoading = true
+      lineageClient
+        .clusterMembers(this.queryId, this.selectedClusterId, extra)
+        .then(function (res) {
+          if (seq !== self.membersSeq) {
+            return
+          }
+          var items = (res && res.items) || []
+          self.clusterMembers = append ? self.clusterMembers.concat(items) : items
+          self.membersPage = (res && res.page) || { nextCursor: null, hasMore: false, total: null }
+        })
+        .catch(function (err) {
+          if (seq !== self.membersSeq || isAbortError(err)) {
+            return
+          }
+          self.error = (err && err.message) || '加载簇成员失败'
+        })
+        .then(function () {
+          if (seq === self.membersSeq) {
+            self.membersLoading = false
+          }
+        })
+    },
+    loadImpact: function (append) {
+      var self = this
+      if (!this.queryId) {
+        return
+      }
+      if (!append) {
+        this.impactItems = []
+        this.impactPage = null
+      }
+      var extra = { limit: 50, signal: this.abortSignal() }
+      if (append && this.impactPage && this.impactPage.nextCursor) {
+        extra.cursor = this.impactPage.nextCursor
+      }
+      var types = this.typeQuery()
+      if (types) {
+        extra.types = types
+      }
+      var seq = ++this.impactSeq
+      this.impactLoading = true
+      lineageClient
+        .impact(this.queryId, extra)
+        .then(function (res) {
+          if (seq !== self.impactSeq) {
+            return
+          }
+          var items = (res && res.items) || []
+          self.impactItems = append ? self.impactItems.concat(items) : items
+          self.impactPage = (res && res.page) || { nextCursor: null, hasMore: false, total: null }
+        })
+        .catch(function (err) {
+          if (seq !== self.impactSeq || isAbortError(err)) {
+            return
+          }
+          self.error = (err && err.message) || '加载影响清单失败'
+        })
+        .then(function () {
+          if (seq === self.impactSeq) {
+            self.impactLoading = false
+          }
+        })
+    },
+    useSelectedAsTarget: function () {
+      if (!this.selectedId) {
+        return
+      }
+      this.targetId = this.selectedId
+      this.runPath(this.selectedId)
+    },
+    runPath: function (targetId) {
+      var self = this
+      var tid = (targetId || this.targetId || '').trim()
+      if (!this.queryId || !tid) {
+        return
+      }
+      this.targetId = tid
+      var seq = ++this.pathSeq
+      this.pathLoading = true
+      this.pathResult = null
+      this.evidenceRelationId = null
+      this.evidenceItems = []
+      lineageClient
+        .path(this.queryId, tid, { signal: this.abortSignal() })
+        .then(function (res) {
+          if (seq !== self.pathSeq) {
+            return
+          }
+          self.pathResult = res
+        })
+        .catch(function (err) {
+          if (seq !== self.pathSeq || isAbortError(err)) {
+            return
+          }
+          self.pathResult = null
+          self.error = (err && err.message) || '加载路径失败'
+        })
+        .then(function () {
+          if (seq === self.pathSeq) {
+            self.pathLoading = false
+          }
+        })
+    },
+    loadEvidence: function (rid) {
+      var self = this
+      if (!this.queryId || !rid) {
+        return
+      }
+      this.evidenceRelationId = rid
+      this.evidenceItems = []
+      var seq = ++this.evidenceSeq
+      this.evidenceLoading = true
+      lineageClient
+        .evidence(this.queryId, rid, { signal: this.abortSignal() })
+        .then(function (res) {
+          if (seq !== self.evidenceSeq) {
+            return
+          }
+          self.evidenceItems = (res && res.items) || []
+        })
+        .catch(function (err) {
+          if (seq !== self.evidenceSeq || isAbortError(err)) {
+            return
+          }
+          self.evidenceItems = []
+          self.error = (err && err.message) || '加载证据失败'
+        })
+        .then(function () {
+          if (seq === self.evidenceSeq) {
+            self.evidenceLoading = false
+          }
+        })
     }
   }
 }
@@ -665,10 +1118,206 @@ button:disabled {
   min-height: 280px;
 }
 
+.workspace.mode-overview,
+.workspace.mode-impact,
+.workspace.mode-path {
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 320px);
+}
+
 @media (max-width: 960px) {
-  .workspace {
+  .workspace,
+  .workspace.mode-overview,
+  .workspace.mode-impact,
+  .workspace.mode-path {
     grid-template-columns: 1fr;
   }
+}
+
+.view-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 8px;
+}
+
+.view-tab {
+  height: 32px;
+  padding: 0 12px;
+  font-size: 0.85rem;
+}
+
+.view-tab.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.type-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: center;
+  font-size: 0.8rem;
+  margin: 0 0 10px;
+}
+
+.filter-label {
+  color: var(--muted);
+}
+
+.type-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 220px;
+  vertical-align: bottom;
+}
+
+.tree-row .name,
+.hit .name,
+.impact-row .name,
+.member-btn .name,
+.hop-node .name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 200px;
+  display: inline-block;
+}
+
+.overview-panel,
+.impact-panel,
+.path-panel {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.72);
+  padding: 8px 10px 12px;
+  min-width: 0;
+}
+
+.cluster-list,
+.member-list,
+.impact-list,
+.hop-list,
+.evidence-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.cluster-row {
+  margin: 6px 0;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 6px;
+}
+
+.cluster-btn,
+.member-btn,
+.impact-row,
+.hop-node {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  height: auto;
+  text-align: left;
+  width: 100%;
+  background: transparent;
+  border: none;
+  padding: 4px 2px;
+}
+
+.cluster-btn:hover,
+.member-btn:hover,
+.impact-row:hover,
+.hop-node:hover {
+  background: rgba(31, 35, 40, 0.06);
+}
+
+.member-btn.selected,
+.impact-row.selected,
+.hop-node.selected {
+  background: rgba(26, 127, 55, 0.12);
+}
+
+.cluster-row .count {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.8rem;
+}
+
+.path-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: flex-end;
+  margin-bottom: 8px;
+}
+
+.path-label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.75rem;
+  color: var(--muted);
+  flex: 1;
+  min-width: 160px;
+}
+
+.path-label input {
+  height: 32px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0 8px;
+}
+
+.hop {
+  margin: 8px 0;
+}
+
+.hop-index {
+  font-size: 0.7rem;
+  color: var(--muted);
+  min-width: 1.2em;
+}
+
+.hop-edge {
+  margin: 4px 0 4px 20px;
+  font-size: 0.78rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.source-ref {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin-top: 4px;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.source-ref input {
+  flex: 1;
+  min-width: 120px;
+  height: 28px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0 6px;
+  background: #f6f8fa;
+}
+
+.evidence-item {
+  margin: 8px 0;
+  font-size: 0.8rem;
 }
 
 .tree-panel,

@@ -1,5 +1,54 @@
 # Implementation progress
 
+## Stage: P4 four views + URL restore
+
+**Goal:** Vue 2 embedded shell tabs for 树/图, 总览, 影响清单, 最短路径 against
+existing lineage APIs, plus URL restore. Keep P3 tree/detail/cross/budget.
+Not the import/exception page. No React Flow. No OIDC.
+
+**Branch:** `feat/p4-four-views-url-restore` (from `main@bf02b21`).
+
+### Done
+
+- View tabs (`ViewTabs`) switch `tree | overview | impact | path`. Keyboard
+  tablist with arrows / Home / End. Narrow layout still stacks panels.
+- **总览** uses `GET .../overview` (layer×type clusters, count only) and
+  `GET .../clusters/{cid}/members` pagination. Locating a member selects it and
+  may POST projection with `revealSelectedPath`. No invented edges.
+- **影响清单** uses independent `GET .../impact` (full reach, optional `types`).
+  Never derived from on-screen tree nodes.
+- **最短路径** uses `GET .../path?targetId=` and `GET .../relations/{rid}/evidence`.
+  `sourceRef` is a readonly copyable string (no HTML).
+- Cycle queries: banner **检测到循环依赖，已切换关系清单**; tree tab unavailable;
+  list/path remain.
+- URL search-param contract (`mode,seedId,snapshotId,selectedId,targetId,types`)
+  in [apps/web/README.md](../apps/web/README.md). `queryId` is not encoded;
+  restore recreates the query from `seedId` and re-fetches APIs.
+- Vitest: URL encode/decode + view-state helpers; lineageClient GET paths.
+- Evidence: [evidence/implementation/p4-four-views-url.txt](../evidence/implementation/p4-four-views-url.txt).
+
+### Commands actually run (this machine)
+
+Environment: Node v22, npm 10, Vue 2.7.16, Vite 4.5, vitest 1.x.
+
+```text
+cd apps/web && npm test && npm run build
+# vitest 1.6.1: 9 files, 30 tests, 0 fail
+# vite build: 34 modules; dist/index.html; exit 0
+```
+
+### Gaps / blocked
+
+- No real SSO / OIDC (open / demo-header + X-Embed-Groups only).
+- Import / exception page is a separate P4 slice.
+- Live four-view click-through needs a running API + published fixture.
+
+### Next
+
+P4 import UI and exception states against the same APIs.
+
+---
+
 ## Stage: P3 projection state, cross-list, change-root, budget gate
 
 **Goal:** Finish leftover P3 on the Vue 2 shell: layout vs domain, atomic
