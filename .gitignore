@@ -3,7 +3,7 @@
 .env.*
 !.env.example
 
-# Node
+# Node / Vue 2
 node_modules/
 dist/
 dist-ssr/
@@ -13,7 +13,7 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
-# Java / Maven
+# Java 8 / Maven
 target/
 *.class
 *.jar

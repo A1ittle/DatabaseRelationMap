@@ -2,26 +2,29 @@
 
 Do not put secrets in the repo. Copy env values from a local untracked `.env`.
 
+Java 8 + Vue 2 embedded shell (PM). HANDOFF default stack is unchanged in
+HANDOFF.md; see [ADR 0001](adr/0001-java8-vue2-embedded-vs-handoff.md).
+
 ## Frontend (`apps/web`)
+
+Vue 2 empty page, iframe-friendly. Not a full SPA product shell.
 
 ```bash
 cd apps/web
 npm install
-npm run dev          # http://localhost:5173
-npm run typecheck
-npm run lint
+npm run dev          # http://127.0.0.1:5173
 npm run test         # placeholder until P3/P4
 npm run build
 ```
 
 ## API (`apps/api`)
 
-Requires Java 21. Maven Wrapper downloads its own distribution on first run.
+Requires **Java 8**. Maven Wrapper downloads its own distribution on first run.
 
 ```bash
 cd apps/api
-./mvnw -DskipTests package
-./mvnw spring-boot:run
+JAVA_HOME=/home/box/tools/jdk8u504-b01 ./mvnw -DskipTests package
+JAVA_HOME=/home/box/tools/jdk8u504-b01 ./mvnw spring-boot:run
 curl http://localhost:8080/api/health
 # {"status":"ok"}
 ```

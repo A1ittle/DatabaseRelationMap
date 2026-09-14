@@ -2,13 +2,12 @@ package com.lineage.api;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
+import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 
-@SpringBootApplication(excludeName = {
-		"org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration",
-		"org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration",
-		"org.springframework.boot.sql.init.autoconfigure.SqlInitializationAutoConfiguration",
-		"org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration",
-		"org.springframework.boot.flyway.autoconfigure.FlywayAutoConfiguration"
+@SpringBootApplication(exclude = {
+		DataSourceAutoConfiguration.class,
+		FlywayAutoConfiguration.class
 })
 public class LineageApiApplication {
 

@@ -1,10 +1,10 @@
 # lineage-api
 
-P0 empty Spring Boot 4.1.1 API (Java 21, Maven Wrapper).
+P0 empty Spring Boot 2.7.18 API (Java 8, Maven Wrapper).
 
 ```bash
-./mvnw -DskipTests package
-./mvnw spring-boot:run
+JAVA_HOME=/home/box/tools/jdk8u504-b01 ./mvnw -DskipTests package
+JAVA_HOME=/home/box/tools/jdk8u504-b01 ./mvnw spring-boot:run
 curl http://localhost:8080/api/health
 # {"status":"ok"}
 ```
