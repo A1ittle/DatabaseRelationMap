@@ -20,6 +20,16 @@ spring:
     enabled: ${FLYWAY_ENABLED:false}
     locations: classpath:db/migration
 
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+
+lineage:
+  security:
+    # open: no SSO (local/dev). demo-header: require X-Lineage-Demo-User.
+    # OIDC is a later task — do not set production secrets here.
+    mode: ${LINEAGE_SECURITY_MODE:open}
+
 management:
   endpoints:
     web:

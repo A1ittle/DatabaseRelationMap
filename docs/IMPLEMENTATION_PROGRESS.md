@@ -1,5 +1,60 @@
 # Implementation progress
 
+## Stage: P2 import + atomic CAS publish
+
+**Goal:** POST/GET `/api/imports` and POST `/api/imports/{runId}/publish` with
+schema+semantic validation, batchKey idempotency, quality_issue rows, and CAS
+publish against real PostgreSQL. Java 8 / Spring Boot 2.7. No OIDC.
+
+**Branch:** `feat/p2-import-cas-publish` (from `main@d1cefdb`).
+
+### Done
+
+- `ImportValidator` — JSON shape + duplicate ids, dangling endpoints, evidence
+  refs, javaKind, relation uniqueness; warnings for self-loop / Java out-edge /
+  directed cycle.
+- `ImportService` + `ImportJdbcRepository` — ingest_run, unpublished snapshot
+  staging (`object_version` / `relation_version` / `evidence`), quality_issue on
+  failure (`status=failed`, no snapshot). Same scope+batchKey+payload SHA → same
+  `runId`; different content → `IMPORT_INVALID`.
+- Publish locks `catalog_scope` (`FOR UPDATE`), checks
+  `expectedActiveSnapshotId`, sets `published_at`, switches `active_snapshot_id`,
+  bumps `revision`. Mismatch → `PUBLISH_CONFLICT` 409. Failed runs cannot publish.
+- HTTP: `/api/imports`, `/api/imports/{runId}` (issues cursor pagination),
+  `/api/imports/{runId}/publish`. CSRF `X-CSRF-Token` on POST. Auth mode
+  `lineage.security.mode=open` (default) or `demo-header`. `/api/health` still
+  works without a datasource.
+- JDBC IT `ImportPublishJdbcTest` uses `deploy/` docker compose PostgreSQL (no
+  JDBC mock): fixture import → publish → rows persist; failed import leaves
+  active unchanged; CAS conflict; concurrent publish one winner.
+- Evidence: [evidence/implementation/p2-import-cas.txt](../evidence/implementation/p2-import-cas.txt).
+
+### Commands actually run (this machine)
+
+Environment: Temurin JDK 8u504-b01, Maven Wrapper, Spring Boot 2.7.18, Docker
+PostgreSQL 17.11 (`deploy/docker-compose.yml`).
+
+```text
+cd apps/api && JAVA_HOME=/home/box/tools/jdk8u504-b01 ./mvnw test
+# LineageApiApplicationTests: 5 run, 0 fail (health without DB)
+# ImportValidatorTest: 6 run, 0 fail
+# CanonicalJsonTest: 1 run, 0 fail
+# ImportPublishJdbcTest: 9 run, 0 fail (real JDBC)
+# Tests run: 35, Failures: 0; BUILD SUCCESS; exit 0
+```
+
+### Gaps / blocked
+
+- No real SSO / OIDC (explicit open/demo-header only).
+- Query context / search / projection APIs are later P2/P3 work.
+- Do not treat fixtures as real lineage.
+
+### Next
+
+Query context, stable cursors, authorization on read APIs.
+
+---
+
 ## Stage: P2 Flyway migration (storage.sql → V1)
 
 **Goal:** convert `spec/v1/storage.sql` into Flyway V1, wire Boot so health still
