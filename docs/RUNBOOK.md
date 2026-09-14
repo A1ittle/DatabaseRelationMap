@@ -38,7 +38,9 @@ SPRING_DATASOURCE_PASSWORD=...
 ```
 
 P0 excludes DataSource/Flyway auto-configuration so `/api/health` works with no
-PostgreSQL. Local PG templates and deploy/ belong to SRE.
+PostgreSQL. Local PG templates live under [`deploy/`](../deploy/README.md)
+(`docker-compose.yml`, `.env.example`, wait/smoke scripts). See also
+[`deploy/RUNBOOK.md`](../deploy/RUNBOOK.md).
 
 ## Design checks (already in repo)
 
