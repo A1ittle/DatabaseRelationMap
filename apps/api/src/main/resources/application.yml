@@ -1,0 +1,28 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: lineage-api
+  sql:
+    init:
+      mode: never
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:}
+    username: ${SPRING_DATASOURCE_USERNAME:}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
+    driver-class-name: org.postgresql.Driver
+  flyway:
+    # P0: Flyway is on the classpath but disabled until PostgreSQL exists (SRE).
+    # No business migrations yet; spec/v1/storage.sql is converted in P2.
+    enabled: false
+    locations: classpath:db/migration
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never

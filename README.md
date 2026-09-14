@@ -10,7 +10,7 @@
 | [完整实现设计](docs/07-implementation-design.md) | 已收敛的架构、技术栈、数据模型、算法、API、前端状态、权限及部署 |
 | [开源参考与采用理由](docs/06-opensource-research.md) | 六个项目的已核实能力、源码证据、借鉴点与复用边界 |
 
-默认方案：React + TypeScript + React Flow；Java 21 + Spring Boot 4.1.x；PostgreSQL 17。不部署整套元数据目录产品。版本线是编码默认值，尚未安装或形成依赖锁；实际发行版本在开工阶段固定。
+默认方案：React + TypeScript + React Flow；Java 21 + Spring Boot 4.1.x；PostgreSQL 17。不部署整套元数据目录产品。P0 已建立空前后端骨架并锁定发行版，见 [依赖基线](docs/DEPENDENCY_BASELINE.md) 与 [本地运行](docs/RUNBOOK.md)。PostgreSQL 由 SRE 提供，本仓库不提交密钥或 `.env`。
 
 ## 机器可读规格与示例
 
@@ -38,3 +38,12 @@
 已验证设计契约结构、示例及图不变量、错误输入拒绝、文档链接与原型副本哈希；原型参考样例回归为 10 个可达对象、9 条主边、3 条跨支。均不能代替业务应用验收。
 
 真实关系数据、企业登录/对象权限映射、目标部署环境仍未提供。设计采用明确默认值使本地编码可继续；真实接入、性能、SSO 和生产部署需后续单独验收。
+
+## 本地空壳启动（P0）
+
+业务功能尚未实现。空前端与空 API 可在无数据库时启动，命令见 [RUNBOOK](docs/RUNBOOK.md)。
+
+```bash
+cd apps/web && npm install && npm run dev     # http://localhost:5173
+cd apps/api && ./mvnw spring-boot:run         # http://localhost:8080/api/health
+```
