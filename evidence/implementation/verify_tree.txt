@@ -1,0 +1,8 @@
+command: node reference/open-design/program-lineage-handoff/spec/verify-tree.mjs
+cwd: /workspace/DatabaseRelationMap
+started: 2026-09-14T11:21:03Z
+----- stdout+stderr -----
+OK  seed=ods.trade_order  reach=10 tree=9 cross=3
+----- end -----
+exit_code: 0
+finished: 2026-09-14T11:21:03Z

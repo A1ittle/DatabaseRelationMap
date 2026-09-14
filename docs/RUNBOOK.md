@@ -12,10 +12,15 @@ Vue 2 empty page, iframe-friendly. Not a full SPA product shell.
 ```bash
 cd apps/web
 npm install
+npm run generate:api # regenerates src/generated/openapi.d.ts from spec/v1/openapi.json
 npm run dev          # http://127.0.0.1:5173
 npm run test         # placeholder until P3/P4
 npm run build
 ```
+
+`generate:api` is types-only (`openapi-typescript`). The committed
+`src/generated/openapi.d.ts` is enough for CI-less clones; re-run after
+OpenAPI edits and commit the result.
 
 ## API (`apps/api`)
 
@@ -44,6 +49,11 @@ PostgreSQL. Local PG templates live under [`deploy/`](../deploy/README.md)
 
 ## Design checks (already in repo)
 
+Requires Python `jsonschema` (`pip install --user -r tools/requirements.txt`).
+Evidence from the last P0 baseline run lives in `evidence/implementation/`.
+
 ```bash
 python3 tools/validate_design.py
+node reference/open-design/program-lineage-handoff/spec/verify-tree.mjs
+node evidence/probe-reference.mjs
 ```

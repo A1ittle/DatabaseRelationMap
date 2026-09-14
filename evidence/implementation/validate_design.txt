@@ -1,0 +1,28 @@
+command: python3 tools/validate_design.py
+cwd: /workspace/DatabaseRelationMap
+started: 2026-09-14T11:21:03Z
+----- stdout+stderr -----
+{
+  "status": "PASS",
+  "openapiPaths": 14,
+  "schemas": 32,
+  "checks": [
+    "Official OpenAPI 3.1 document structure",
+    "32 component schemas and import schema meta-validation",
+    "3 contract examples validate",
+    "Manual fixture reach/rank/parent/partition/count/path/projection invariants",
+    "3 malformed examples rejected",
+    "Preserved prototype file hashes",
+    "Design links, references and code fences"
+  ],
+  "notValidated": [
+    "Application implementation",
+    "SQL migration execution",
+    "Real input lineage correctness",
+    "UI runtime and performance",
+    "Production OIDC and deployment"
+  ]
+}
+----- end -----
+exit_code: 0
+finished: 2026-09-14T11:21:03Z
