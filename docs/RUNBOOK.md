@@ -7,15 +7,25 @@ HANDOFF.md; see [ADR 0001](adr/0001-java8-vue2-embedded-vs-handoff.md).
 
 ## Frontend (`apps/web`)
 
-Vue 2 empty page, iframe-friendly. Not a full SPA product shell.
+Vue 2 embedded shell (iframe-friendly). Search / query / downstream tree /
+detail. Not a full SPA product chrome. No React Flow.
 
 ```bash
 cd apps/web
 npm install
 npm run generate:api # regenerates src/generated/openapi.d.ts from spec/v1/openapi.json
-npm run dev          # http://127.0.0.1:5173
-npm run test         # placeholder until P3/P4
+npm run dev          # http://127.0.0.1:5173  (proxies /api → VITE_API_BASE)
+npm run test         # vitest
 npm run build
+```
+
+Defaults: `VITE_API_BASE=http://127.0.0.1:8080`, POST header `X-CSRF-Token: dev`.
+Optional `VITE_EMBED_GROUPS`. See `apps/web/.env.example` and `apps/web/README.md`.
+
+Deep-expand demo against a published fixture (exits 2 if API is down):
+
+```bash
+cd apps/web && ./scripts/demo-deep-expand.sh
 ```
 
 `generate:api` is types-only (`openapi-typescript`). The committed
@@ -108,6 +118,9 @@ curl -sS -H 'X-Embed-Groups: g-view' \
 Queries bind the **active snapshot** and `policy_revision` at create time.
 Changing embed groups or bumping `policy_revision` on a live query returns
 `POLICY_CHANGED`. Expired in-memory contexts return `QUERY_EXPIRED` (410).
+
+Open mode answers CORS preflight (`Origin` + `X-CSRF-Token` /
+`X-Embed-Groups`) so the Vite shell on port 5173 can call port 8080.
 
 JDBC tests: `QueryApiJdbcTest` (import+publish fixture, then search / query /
 children / projection / path, plus unauthorized-id cases).

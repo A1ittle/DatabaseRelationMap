@@ -1,5 +1,54 @@
 # Implementation progress
 
+## Stage: P3 search + downstream tree UI
+
+**Goal:** Vue 2 embedded shell vertical slice: search root → create query →
+default one-level downstream tree → select detail → children pagination →
+projection full replace. Existing `/api/lineage/*` on Java 8. No React Flow
+(ADR 0001). No OIDC; no invented lineage.
+
+**Branch:** `feat/p3-search-downstream-tree-ui` (from `main@171bb99`).
+
+### Done
+
+- `apps/web` calls `GET /api/lineage/search`, `POST /api/lineage/queries`,
+  `GET .../children`, `POST .../projection`, `GET .../nodes/{id}` and
+  `.../relations`. Config: `VITE_API_BASE` default `http://127.0.0.1:8080`,
+  CSRF `X-CSRF-Token: dev` on POST, optional `VITE_EMBED_GROUPS`.
+- Expandable tree + detail panel (no React Flow / G6). Tree vs cross CSS
+  (`kind-tree` / `kind-cross` / `kind-unclassified`).
+- `clientRevision` guard drops stale projection responses.
+- Children cursor pagination; after expand, candidateIds are posted and the
+  projection **replaces** graph state.
+- Open-mode CORS filter so the Vite shell on :5173 can call :8080.
+- Vitest: revision guard, tree index from `fixtures/v1/query-response.json`,
+  client headers. Demo: `apps/web/scripts/demo-deep-expand.sh` (root → view-a
+  → proc-b → table-c, layoutRank 0..3+).
+- Evidence: [evidence/implementation/p3-search-tree-ui.txt](../evidence/implementation/p3-search-tree-ui.txt).
+
+### Commands actually run (this machine)
+
+Environment: Node v22, npm 10, Vue 2.7.16, Vite 4.5, vitest 1.x.
+
+```text
+cd apps/web && npm install && npm test && npm run build
+# vitest 1.6.1: 4 files, 10 tests, 0 fail
+# vite build: 18 modules; dist/index.html; exit 0
+```
+
+### Gaps / blocked
+
+- No real SSO / OIDC (open / demo-header + X-Embed-Groups only).
+- Four-view workspace, import UI, URL restore are P4.
+- Deep-expand e2e needs a running API + published fixture; script exits 2 if
+  the API is down. Do not treat fixtures as real lineage.
+
+### Next
+
+P4 four views, import page, and exception states against the same APIs.
+
+---
+
 ## Stage: P2 query API + minimal embed auth
 
 **Goal:** Wire lineage query APIs to published snapshots and P1
