@@ -13,9 +13,11 @@ spring:
     password: ${SPRING_DATASOURCE_PASSWORD:}
     driver-class-name: org.postgresql.Driver
   flyway:
-    # P0: Flyway is on the classpath but disabled until PostgreSQL exists (SRE).
-    # No business migrations yet; spec/v1/storage.sql is converted in P2.
-    enabled: false
+    # Default off so local/CI without PostgreSQL still serves /api/health.
+    # When SPRING_DATASOURCE_URL is set, OptionalDataSourceEnvironmentPostProcessor
+    # turns Flyway on unless FLYWAY_ENABLED=false. Profile `db` (application-db.yml)
+    # is the explicit SRE opt-in.
+    enabled: ${FLYWAY_ENABLED:false}
     locations: classpath:db/migration
 
 management:

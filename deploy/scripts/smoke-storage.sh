@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Optional DDL smoke: apply spec/v1/storage.sql to the disposable local DB.
-# This is NOT production Flyway. P2 owns real migrations.
+# Official migrations are Flyway V1 — use deploy/scripts/migrate-verify.sh.
 # Re-run on a dirty volume will fail (objects already exist); use down -v first.
 set -euo pipefail
 

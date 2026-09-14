@@ -16,26 +16,20 @@ docker compose -f deploy/docker-compose.yml down -v     # 销毁数据
 
 健康检查：`docker compose -f deploy/docker-compose.yml ps`；容器内 `pg_isready -U lineage -d lineage`。
 
-## Java 8 + Spring Boot 2.7 API（本分支无 apps/）
+## Java 8 + Spring Boot 2.7 API
 
-API 工程由 Engineer 分支提供。**当前 API 允许无 PG 启动**；本库给 P2 Flyway 用。
-
-环境变量名需与未来占位一致：
+**无** `SPRING_DATASOURCE_URL` 时 API 仍可起 `/api/health`。有 URL 时 Flyway V1 在启动时执行（除非 `FLYWAY_ENABLED=false`）。
 
 ```bash
 export SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/lineage
 export SPRING_DATASOURCE_USERNAME=lineage
 export SPRING_DATASOURCE_PASSWORD=change-me-local   # 仅本地，来自 deploy/.env
+export FLYWAY_ENABLED=true
+cd apps/api
+JAVA_HOME=/home/box/tools/jdk8u504-b01 ./mvnw spring-boot:run -Dspring-boot.run.profiles=db
 ```
 
-示意启动（路径以 Engineer 交付为准，此处不创建 `apps/`）：
-
-```bash
-# JDK 8
-java -version
-# 典型 Maven 启动，待 apps/api 存在后：
-# mvn -f apps/api/pom.xml -DskipTests spring-boot:run
-```
+可销毁验收（需 Docker）：`./deploy/scripts/migrate-verify.sh`。无 Docker 则该脚本 **BLOCKED** 并打印同样步骤。
 
 嵌入方式：宿主系统把前端壳指向本地 API；API 再连上述 JDBC。不做独立 OIDC 产品部署。
 

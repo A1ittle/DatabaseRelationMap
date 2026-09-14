@@ -1,6 +1,7 @@
 # lineage-api
 
-P0 empty Spring Boot 2.7.18 API (Java 8, Maven Wrapper).
+Spring Boot 2.7.18 API (Java 8, Maven Wrapper). Graph algorithms in
+`domain/graph`. Flyway V1 lives at `src/main/resources/db/migration/V1__storage.sql`.
 
 ```bash
 JAVA_HOME=/home/box/tools/jdk8u504-b01 ./mvnw -DskipTests package
@@ -9,14 +10,24 @@ curl http://localhost:8080/api/health
 # {"status":"ok"}
 ```
 
-P1 graph counterexamples (TDD, currently red on the stub façade):
+Without `SPRING_DATASOURCE_URL` the process starts with DataSource/Flyway
+auto-configuration excluded. Tests cover `/api/health` on that path.
+
+When PostgreSQL is available (see `deploy/.env.example`):
 
 ```bash
-JAVA_HOME=/home/box/tools/jdk8u504-b01 ./mvnw test
-# P1CounterexampleSuiteTest is expected to fail until BFS/classify/path is implemented.
+export SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/lineage
+export SPRING_DATASOURCE_USERNAME=lineage
+export SPRING_DATASOURCE_PASSWORD=...   # from deploy/.env, never commit
+export FLYWAY_ENABLED=true
+JAVA_HOME=/home/box/tools/jdk8u504-b01 ./mvnw spring-boot:run -Dspring-boot.run.profiles=db
+# or, without starting the app:
+JAVA_HOME=/home/box/tools/jdk8u504-b01 ./mvnw flyway:migrate \
+  -Dflyway.url="$SPRING_DATASOURCE_URL" \
+  -Dflyway.user="$SPRING_DATASOURCE_USERNAME" \
+  -Dflyway.password="$SPRING_DATASOURCE_PASSWORD"
 ```
 
-Datasource is read from `SPRING_DATASOURCE_URL` / `USERNAME` / `PASSWORD`.
-JDBC and Flyway auto-configuration is excluded in P0 so the process starts
-without PostgreSQL. Flyway remains on the classpath (`spring.flyway.enabled=false`);
-business migrations start in P2 after SRE provides PostgreSQL 17.
+`spring.flyway.enabled=${FLYWAY_ENABLED:false}` in `application.yml`. A non-empty
+URL still enables Flyway unless `FLYWAY_ENABLED=false`. Live migrate recipe:
+`../../deploy/scripts/migrate-verify.sh` (Docker required; BLOCKED without it).

@@ -34,18 +34,29 @@ curl http://localhost:8080/api/health
 # {"status":"ok"}
 ```
 
-Optional datasource (unused until JDBC auto-config is enabled in P2):
+Datasource / Flyway (P2):
 
 ```text
 SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/lineage
 SPRING_DATASOURCE_USERNAME=...
 SPRING_DATASOURCE_PASSWORD=...
+FLYWAY_ENABLED=true          # default false; URL present enables Flyway unless this is false
 ```
 
-P0 excludes DataSource/Flyway auto-configuration so `/api/health` works with no
-PostgreSQL. Local PG templates live under [`deploy/`](../deploy/README.md)
-(`docker-compose.yml`, `.env.example`, wait/smoke scripts). See also
-[`deploy/RUNBOOK.md`](../deploy/RUNBOOK.md).
+Without `SPRING_DATASOURCE_URL`, DataSource and Flyway auto-configuration stay
+excluded so `/api/health` still works. With a URL, Boot runs
+`classpath:db/migration` (`V1__storage.sql`) on startup. Optional profile `db`
+(`application-db.yml`) is the explicit opt-in.
+
+Live migrate against disposable PG 17 (Docker required):
+
+```bash
+./deploy/scripts/migrate-verify.sh
+```
+
+**BLOCKED on hosts without Docker** (this agent host included). The script prints
+the SRE recipe and exits 1. See [`deploy/README.md`](../deploy/README.md) and
+[`deploy/RUNBOOK.md`](../deploy/RUNBOOK.md). Never commit `deploy/.env`.
 
 ## Design checks (already in repo)
 
