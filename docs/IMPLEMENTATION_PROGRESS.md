@@ -1,5 +1,50 @@
 # Implementation progress
 
+## Stage: P4 import / publish page + exception states
+
+**Goal:** Vue 2 embedded **数据导入** page against existing import APIs, plus
+distinct query-shell exception banners (HANDOFF P4). Four views already on
+main. Not 视觉冻结. No React Flow. No OIDC.
+
+**Branch:** `feat/p4-import-publish-exceptions` (from `main@5f2ba6c`).
+
+### Done
+
+- Nav **血缘工作台 | 数据导入**. Import page: paste/upload ImportBatch JSON
+  (documented sample `fixtures/v1/import.json`, not production lineage).
+  `POST /api/imports` → 202; `GET /api/imports/{runId}` issue pagination;
+  publish when `ready` (`expectedActiveSnapshotId`, empty = null).
+- Client `apps/web/src/api/importClient.js` (CSRF `X-CSRF-Token: dev`, optional
+  `X-Embed-Groups`) + vitest (202, GET cursor, 413 `PAYLOAD_TOO_LARGE`,
+  `IMPORT_INVALID`, `PUBLISH_CONFLICT`).
+- Exception helper + `ExceptionBanner`: empty / no hits / `LINEAGE_NOT_COLLECTED`
+  (未采集) / request failure / `TEMPORARILY_UNAVAILABLE` / `POLICY_CHANGED` and
+  `QUERY_EXPIRED` (destroy query, 重新搜索) / coverage incomplete /
+  `FORBIDDEN`/`UNAUTHENTICATED` only from API codes. Cycle 环→清单/路径 kept.
+- Evidence: [evidence/implementation/p4-import-publish-exceptions.txt](../evidence/implementation/p4-import-publish-exceptions.txt).
+
+### Commands actually run (this machine)
+
+Environment: Node v22, npm 10, Vue 2.7.16, Vite 4.5, vitest 1.x.
+
+```text
+cd apps/web && npm test && npm run build
+# vitest 1.6.1: 11 files, 42 tests, 0 fail
+# vite build: 40 modules; dist/index.html; exit 0
+```
+
+### Gaps / blocked
+
+- No real SSO / OIDC (open / demo-header + X-Embed-Groups only).
+- Live import→publish click-through needs a running API + PostgreSQL.
+- Do not treat fixtures as real lineage.
+
+### Next
+
+P4 视觉冻结 (separate) / P5 scale and deploy. A01–A22 remaining evidence.
+
+---
+
 ## Stage: P4 four views + URL restore
 
 **Goal:** Vue 2 embedded shell tabs for 树/图, 总览, 影响清单, 最短路径 against

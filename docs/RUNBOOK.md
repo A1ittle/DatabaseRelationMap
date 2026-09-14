@@ -8,8 +8,9 @@ HANDOFF.md; see [ADR 0001](adr/0001-java8-vue2-embedded-vs-handoff.md).
 ## Frontend (`apps/web`)
 
 Vue 2 embedded shell (iframe-friendly). Search / query / four views (tree,
-overview, impact, path) / detail. URL restore via search params (see
-`apps/web/README.md`). Not a full SPA product chrome. No React Flow.
+overview, impact, path) / detail / **数据导入** (validate + publish) /
+exception banners. URL restore via search params (see `apps/web/README.md`).
+Not a full SPA product chrome. No React Flow.
 
 ```bash
 cd apps/web
@@ -84,6 +85,22 @@ curl -sS -H 'Content-Type: application/json' -H 'X-CSRF-Token: demo' \
   --data '{"expectedActiveSnapshotId":null}' \
   http://localhost:8080/api/imports/{runId}/publish
 ```
+
+Embedded UI (same CSRF `X-CSRF-Token: dev`, optional `X-Embed-Groups`):
+
+1. `cd apps/web && npm run dev` → http://127.0.0.1:5173
+2. Nav **数据导入**. Paste or upload `fixtures/v1/import.json` (documented sample
+   path; not production lineage). Submit → 202 runId / status / error & warning
+   counts / snapshotId.
+3. Refresh or wait for poll; paginate validation issues.
+4. When status is `ready`, **发布** (`expectedActiveSnapshotId` empty = `null`).
+   `PUBLISH_CONFLICT` is shown as its own banner. Oversize → `PAYLOAD_TOO_LARGE`
+   / 413; schema errors → `IMPORT_INVALID` with the issues list.
+5. Switch to **血缘工作台** and search. Distinct banners: empty / 未采集
+   (`LINEAGE_NOT_COLLECTED`), request failure / `TEMPORARILY_UNAVAILABLE`,
+   `POLICY_CHANGED` / `QUERY_EXPIRED` (destroy query, 重新搜索), incomplete
+   coverage, cycle 环→清单/路径. `FORBIDDEN` / `UNAUTHENTICATED` only when the
+   API returns them (embed groups / demo-header). No invented OIDC mappings.
 
 JDBC integration tests (`ImportPublishJdbcTest`) bring up `deploy/` compose and
 use real PostgreSQL. `./mvnw test` from `apps/api` with JDK 8.
