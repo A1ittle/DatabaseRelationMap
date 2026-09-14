@@ -49,15 +49,63 @@ curl http://localhost:8080/actuator/health # {"status":"UP"}
 
 ### Gaps / blocked
 
-- **PostgreSQL 17** is owned by SRE. No local PG in this task; API health does
-  not check the database.
+- **PostgreSQL 17 / `deploy/`** — delivered on SRE branch `feat/p0-local-pg-deploy`
+  (see section below). API health still does not require the database until P2.
 - No real SSO / OIDC.
 - No real lineage import or graph algorithm (P1+).
-- No `deploy/` production templates (SRE).
 - Frontend has no graph canvas yet.
-- Contract client types from OpenAPI not generated yet.
+- Contract client types from OpenAPI may land in a follow-up Engineer PR.
 
 ### Next
 
 P1 domain algorithm against `fixtures/v1` expected output; P2 Flyway from
 `spec/v1/storage.sql` once PG is available.
+
+---
+
+## SRE P0 · 本地 PostgreSQL 17 + deploy 模板
+
+**阶段目标：** 可销毁的本地 PG17、`deploy/` 模板、嵌入式工具运行摘记。不实现业务应用、不编造 SSO/生产数据。
+
+**产品形态（PM）：** 嵌入已有系统的工具；API 为 Java 8 + Spring Boot 2.7，前端壳 Vue 2。本段不改 `apps/`，不改 HANDOFF 产品默认值。
+
+### 本阶段新增
+
+| 路径 | 说明 |
+|---|---|
+| `deploy/docker-compose.yml` | PostgreSQL 17、named volume `lineage_pg_data`、healthcheck、`5432:5432`、`restart: unless-stopped` |
+| `deploy/.env.example` | 占位 `POSTGRES_*` 与 `SPRING_DATASOURCE_*`；真实 `.env` gitignore |
+| `deploy/README.md` | 启动/停止/销毁、连接串、环境清单、健康检查、回滚、BLOCKED、嵌入说明 |
+| `deploy/RUNBOOK.md` | Java 8 启动摘记 + PG 生命周期（薄指针；完整产品 RUNBOOK 见 `docs/RUNBOOK.md`） |
+| `deploy/scripts/wait-pg.sh` | 等到 compose health / `pg_isready` |
+| `deploy/scripts/smoke-storage.sh` | 可选：把 `spec/v1/storage.sql` 打进可销毁库（**不是** Flyway） |
+
+未改：`HANDOFF.md`、`reference/**`、`spec/**`、`fixtures/**`。未提交真实 `.env`。
+
+### 本地命令
+
+```bash
+cp deploy/.env.example deploy/.env
+docker compose -f deploy/docker-compose.yml up -d
+./deploy/scripts/wait-pg.sh
+docker compose -f deploy/docker-compose.yml ps
+docker compose -f deploy/docker-compose.yml exec postgres pg_isready -U lineage -d lineage
+# 可选 DDL 冒烟（非生产迁移）：
+./deploy/scripts/smoke-storage.sh
+docker compose -f deploy/docker-compose.yml down -v
+```
+
+### 验证状态
+
+| 项 | 结果 |
+|---|---|
+| 模板文件 | 已写入仓库 |
+| `deploy/scripts/*.sh` 可执行位 | 已 `chmod +x` |
+| 密码 | 仅占位 `change-me-local` |
+| `docker compose … config` | **template-only on agent host**（无 Docker）。有 Docker 的开发机按 `deploy/README.md` 实跑。 |
+
+### BLOCKED / 非本阶段
+
+- 真实 SSO、企业 OIDC、生产凭证与主机
+- 真实血缘数据
+- Flyway 正式迁移与 API 连库验收（P2）
