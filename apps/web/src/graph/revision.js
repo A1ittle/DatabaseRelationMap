@@ -5,10 +5,14 @@
  */
 export function createRevisionGuard() {
   var current = 0
+  var epoch = 0
 
   return {
     current: function () {
       return current
+    },
+    epoch: function () {
+      return epoch
     },
     next: function () {
       current += 1
@@ -16,6 +20,7 @@ export function createRevisionGuard() {
     },
     reset: function () {
       current = 0
+      epoch += 1
     },
     adopt: function (revision) {
       var n = Number(revision)
@@ -26,7 +31,10 @@ export function createRevisionGuard() {
         current = n
       }
     },
-    isStale: function (sentRevision) {
+    isStale: function (sentRevision, sentEpoch) {
+      if (sentEpoch != null && Number(sentEpoch) !== epoch) {
+        return true
+      }
       if (sentRevision == null) {
         return true
       }
@@ -34,9 +42,13 @@ export function createRevisionGuard() {
     },
     /**
      * Apply only when the response revision matches the request we sent
-     * and is not older than the latest issued revision.
+     * and is not older than the latest issued revision. A reset() bumps
+     * epoch so in-flight replies from a previous query cannot land.
      */
-    shouldApply: function (responseRevision, sentRevision) {
+    shouldApply: function (responseRevision, sentRevision, sentEpoch) {
+      if (sentEpoch != null && Number(sentEpoch) !== epoch) {
+        return false
+      }
       if (responseRevision == null || !isFinite(Number(responseRevision))) {
         return false
       }

@@ -26,6 +26,14 @@
         <dt>可换根</dt>
         <dd>{{ detail.canSetAsRoot ? '是' : '否' }}</dd>
       </dl>
+      <button
+        type="button"
+        class="change-root"
+        :disabled="!canChangeRoot"
+        @click="$emit('change-root')"
+      >
+        换根
+      </button>
       <div v-if="relations.length" class="rel-block">
         <div class="panel-head nested">关系摘要</div>
         <ul class="rel-list">
@@ -48,7 +56,8 @@ export default {
   props: {
     detail: { type: Object, default: null },
     relations: { type: Array, default: function () { return [] } },
-    loading: { type: Boolean, default: false }
+    loading: { type: Boolean, default: false },
+    canChangeRoot: { type: Boolean, default: false }
   },
   methods: {
     kindClass: kindClass

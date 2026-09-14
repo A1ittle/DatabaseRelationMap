@@ -1,5 +1,55 @@
 # Implementation progress
 
+## Stage: P3 projection state, cross-list, change-root, budget gate
+
+**Goal:** Finish leftover P3 on the Vue 2 shell: layout vs domain, atomic
+projection replace, cross-branch locate, change-root, drawn stats, budget
+keep-old. No React Flow. No OIDC.
+
+**Branch:** `feat/p3-projection-cross-budget` (from `main@2a8a69c`).
+
+### Done
+
+- Layout (`apps/web/src/graph/layout.js`) uses `layoutRank` only; classify stays
+  on the API. Vue 2 expandable tree is the canvas.
+- Atomic replace via `resolveProjectionOutcome`: nodes+edges commit together;
+  incomplete or stale responses leave the previous canvas.
+- Cross panel lists cross + unclassified edges from projection kinds (same set
+  regardless of expand order). **定位** pins the other endpoint and may POST
+  projection with `revealSelectedPath`.
+- **换根** cancels in-flight work (AbortController + revision epoch), clears
+  expand pages/pins, creates a new query from the selected object, remounts the
+  tree.
+- Meta bar **绘制节点/边** from the current projection; server `stats` kept as
+  **服务端 下游**.
+- `PROJECTION_LIMIT` → banner `超预算，已保留原图`; candidateIds rolled back.
+  Vitest covers budget keep-old, incomplete graph, stale revision, cross-list
+  helper, layout stability. Synthetic oversize `candidateIds` in tests only.
+- Evidence: [evidence/implementation/p3-projection-cross-budget.txt](../evidence/implementation/p3-projection-cross-budget.txt).
+
+### Commands actually run (this machine)
+
+Environment: Node v22, npm 10, Vue 2.7.16, Vite 4.5, vitest 1.x.
+
+```text
+cd apps/web && npm test && npm run build
+# vitest 1.6.1: 8 files, 20 tests, 0 fail
+# vite build: 23 modules; dist/index.html; exit 0
+```
+
+### Gaps / blocked
+
+- No real SSO / OIDC (open / demo-header + X-Embed-Groups only).
+- Four-view workspace, import UI, URL restore are P4.
+- Live oversize projection against a published snapshot is not exercised here
+  (fixture graph is far under 200/2000). Client path uses a mock 400.
+
+### Next
+
+P4 four views, import page, and exception states against the same APIs.
+
+---
+
 ## Stage: P3 search + downstream tree UI
 
 **Goal:** Vue 2 embedded shell vertical slice: search root → create query →

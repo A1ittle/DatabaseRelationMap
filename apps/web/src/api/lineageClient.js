@@ -62,6 +62,9 @@ export function createLineageClient(options) {
     if (method === 'POST') {
       init.body = JSON.stringify((spec && spec.body) || {})
     }
+    if (spec && spec.signal) {
+      init.signal = spec.signal
+    }
     return fetchImpl(url, init).then(function (res) {
       return res.text().then(function (text) {
         var json = null
@@ -101,14 +104,18 @@ export function createLineageClient(options) {
           query.limit = extra.limit
         }
       }
-      return request('/api/lineage/search', { query: query })
+      return request('/api/lineage/search', { query: query, signal: extra && extra.signal })
     },
-    createQuery: function (seedId, snapshotId) {
+    createQuery: function (seedId, snapshotId, extra) {
       var body = { seedId: seedId }
       if (snapshotId) {
         body.snapshotId = snapshotId
       }
-      return request('/api/lineage/queries', { method: 'POST', body: body })
+      return request('/api/lineage/queries', {
+        method: 'POST',
+        body: body,
+        signal: extra && extra.signal
+      })
     },
     children: function (qid, parentId, extra) {
       var query = { parentId: parentId }
@@ -124,18 +131,21 @@ export function createLineageClient(options) {
         }
       }
       return request('/api/lineage/queries/' + encodeURIComponent(qid) + '/children', {
-        query: query
+        query: query,
+        signal: extra && extra.signal
       })
     },
-    projection: function (qid, body) {
+    projection: function (qid, body, extra) {
       return request('/api/lineage/queries/' + encodeURIComponent(qid) + '/projection', {
         method: 'POST',
-        body: body
+        body: body,
+        signal: extra && extra.signal
       })
     },
-    getNode: function (qid, id) {
+    getNode: function (qid, id, extra) {
       return request(
-        '/api/lineage/queries/' + encodeURIComponent(qid) + '/nodes/' + encodeURIComponent(id)
+        '/api/lineage/queries/' + encodeURIComponent(qid) + '/nodes/' + encodeURIComponent(id),
+        { signal: extra && extra.signal }
       )
     },
     relations: function (qid, id, kind, extra) {
@@ -154,7 +164,7 @@ export function createLineageClient(options) {
           '/nodes/' +
           encodeURIComponent(id) +
           '/relations',
-        { query: query }
+        { query: query, signal: extra && extra.signal }
       )
     }
   }

@@ -81,4 +81,39 @@ describe('lineageClient', function () {
     expect(seen[0].body.clientRevision).toBe(2)
     expect(seen[0].body.candidateIds).toEqual(['root', 'view-a'])
   })
+
+  it('surfaces PROJECTION_LIMIT without returning a graph body', async function () {
+    var client = createLineageClient({
+      getConfig: function () {
+        return { apiBase: 'http://127.0.0.1:8080', csrfToken: 'dev', embedGroups: '' }
+      },
+      fetchImpl: mockFetch(function () {
+        return jsonResponse(400, {
+          code: 'PROJECTION_LIMIT',
+          message: 'projection exceeds 200 objects',
+          retryable: false
+        })
+      })
+    })
+    var oversize = ['root']
+    var i
+    for (i = 0; i < 201; i++) {
+      oversize.push('synth-' + i)
+    }
+    var caught = null
+    try {
+      await client.projection('qid-1', {
+        candidateIds: oversize,
+        selectedId: 'root',
+        types: client.ALL_TYPES,
+        revealSelectedPath: false,
+        clientRevision: 3
+      })
+    } catch (err) {
+      caught = err
+    }
+    expect(caught).toBeTruthy()
+    expect(caught.code).toBe('PROJECTION_LIMIT')
+    expect(caught.status).toBe(400)
+  })
 })
