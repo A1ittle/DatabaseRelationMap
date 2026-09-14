@@ -148,6 +148,80 @@ export function createLineageClient(options) {
         { signal: extra && extra.signal }
       )
     },
+    overview: function (qid, extra) {
+      var query = {}
+      if (extra) {
+        if (extra.cursor) {
+          query.cursor = extra.cursor
+        }
+        if (extra.limit != null) {
+          query.limit = extra.limit
+        }
+        if (extra.types) {
+          query.types = extra.types
+        }
+      }
+      return request('/api/lineage/queries/' + encodeURIComponent(qid) + '/overview', {
+        query: query,
+        signal: extra && extra.signal
+      })
+    },
+    clusterMembers: function (qid, cid, extra) {
+      var query = {}
+      if (extra) {
+        if (extra.cursor) {
+          query.cursor = extra.cursor
+        }
+        if (extra.limit != null) {
+          query.limit = extra.limit
+        }
+      }
+      return request(
+        '/api/lineage/queries/' +
+          encodeURIComponent(qid) +
+          '/clusters/' +
+          encodeURIComponent(cid) +
+          '/members',
+        { query: query, signal: extra && extra.signal }
+      )
+    },
+    impact: function (qid, extra) {
+      var query = {}
+      if (extra) {
+        if (extra.cursor) {
+          query.cursor = extra.cursor
+        }
+        if (extra.limit != null) {
+          query.limit = extra.limit
+        }
+        if (extra.types) {
+          query.types = extra.types
+        }
+        if (extra.system) {
+          query.system = extra.system
+        }
+      }
+      return request('/api/lineage/queries/' + encodeURIComponent(qid) + '/impact', {
+        query: query,
+        signal: extra && extra.signal
+      })
+    },
+    path: function (qid, targetId, extra) {
+      return request('/api/lineage/queries/' + encodeURIComponent(qid) + '/path', {
+        query: { targetId: targetId },
+        signal: extra && extra.signal
+      })
+    },
+    evidence: function (qid, rid, extra) {
+      return request(
+        '/api/lineage/queries/' +
+          encodeURIComponent(qid) +
+          '/relations/' +
+          encodeURIComponent(rid) +
+          '/evidence',
+        { signal: extra && extra.signal }
+      )
+    },
     relations: function (qid, id, kind, extra) {
       var query = { kind: kind || 'all' }
       if (extra) {

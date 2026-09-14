@@ -12,7 +12,7 @@
         {{ open ? '▾' : '▸' }}
       </button>
       <span v-else class="twist spacer"></span>
-      <span class="name">{{ displayName }}</span>
+      <span class="name truncate" :title="displayName">{{ displayName }}</span>
       <span class="badge type" :class="'type-' + objectType">{{ objectType }}</span>
       <span v-if="treeChildCount" class="badge quiet">子 {{ treeChildCount }}</span>
       <span v-if="crossCount" class="badge kind-cross">跨 {{ crossCount }}</span>

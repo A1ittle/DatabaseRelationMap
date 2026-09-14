@@ -7,8 +7,9 @@ HANDOFF.md; see [ADR 0001](adr/0001-java8-vue2-embedded-vs-handoff.md).
 
 ## Frontend (`apps/web`)
 
-Vue 2 embedded shell (iframe-friendly). Search / query / downstream tree /
-detail. Not a full SPA product chrome. No React Flow.
+Vue 2 embedded shell (iframe-friendly). Search / query / four views (tree,
+overview, impact, path) / detail. URL restore via search params (see
+`apps/web/README.md`). Not a full SPA product chrome. No React Flow.
 
 ```bash
 cd apps/web

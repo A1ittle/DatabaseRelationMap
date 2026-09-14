@@ -6,7 +6,7 @@
     <div v-if="detail" class="detail-body">
       <dl>
         <dt>名称</dt>
-        <dd>{{ name }}</dd>
+        <dd class="truncate" :title="name">{{ name }}</dd>
         <dt>类型</dt>
         <dd>
           <span class="badge type" :class="'type-' + objectType">{{ objectType }}</span>

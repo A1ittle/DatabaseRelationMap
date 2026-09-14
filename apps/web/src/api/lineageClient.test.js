@@ -116,4 +116,41 @@ describe('lineageClient', function () {
     expect(caught.code).toBe('PROJECTION_LIMIT')
     expect(caught.status).toBe(400)
   })
+
+  it('calls overview, members, impact, path, evidence as GET without CSRF', async function () {
+    var seen = []
+    var client = createLineageClient({
+      getConfig: function () {
+        return { apiBase: 'http://127.0.0.1:8080', csrfToken: 'dev', embedGroups: '' }
+      },
+      fetchImpl: mockFetch(function (url, init) {
+        seen.push({ url: String(url), method: init.method, headers: init.headers })
+        return jsonResponse(200, { items: [], page: { nextCursor: null, hasMore: false, total: 0 } })
+      })
+    })
+    await client.overview('qid-1', { types: ['table', 'java'], limit: 50 })
+    await client.clusterMembers('qid-1', 'c-0-table', { cursor: 'n1' })
+    await client.impact('qid-1', { types: ['view'], system: 'demo' })
+    await client.path('qid-1', 'java-j')
+    await client.evidence('qid-1', 'e07')
+    expect(seen[0].url).toBe(
+      'http://127.0.0.1:8080/api/lineage/queries/qid-1/overview?limit=50&types=table&types=java'
+    )
+    expect(seen[1].url).toBe(
+      'http://127.0.0.1:8080/api/lineage/queries/qid-1/clusters/c-0-table/members?cursor=n1'
+    )
+    expect(seen[2].url).toBe(
+      'http://127.0.0.1:8080/api/lineage/queries/qid-1/impact?types=view&system=demo'
+    )
+    expect(seen[3].url).toBe(
+      'http://127.0.0.1:8080/api/lineage/queries/qid-1/path?targetId=java-j'
+    )
+    expect(seen[4].url).toBe(
+      'http://127.0.0.1:8080/api/lineage/queries/qid-1/relations/e07/evidence'
+    )
+    seen.forEach(function (row) {
+      expect(row.method).toBe('GET')
+      expect(row.headers['X-CSRF-Token']).toBeUndefined()
+    })
+  })
 })
