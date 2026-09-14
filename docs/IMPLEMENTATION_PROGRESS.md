@@ -1,5 +1,52 @@
 # Implementation progress
 
+## Stage: P1 counterexample acceptance suite (TDD red)
+
+**Goal:** land independent graph counterexamples and a thin `domain/graph` façade
+*before* the full BFS/classify/path algorithm. Embedded-tool stack remains
+Java 8 + Spring Boot 2.7. No real lineage data, no SSO.
+
+**Branch:** `feat/p1-graph-counterexamples` (from `main@b98eefb`).
+
+### Done
+
+- Hand-authored fixtures under [fixtures/v1/counterexamples/](../fixtures/v1/counterexamples/)
+  (not generator output): parallel relations, self-loop, cycle tail, reorder
+  stability, Java out-edges, hidden intermediate, path unknown / length cap.
+- JUnit 5 suite `com.lineage.api.domain.graph.P1CounterexampleSuiteTest` plus
+  an alignment hook for `fixtures/v1/import.json` → `expected.json`
+  (seed/reach/tree/cross/minHops/parentEdgeIds/excludedRelationIds/pathToJava).
+- Thin façade `com.lineage.api.domain.graph.LineageGraphAlgorithms` with a stub
+  from `LineageGraphAlgorithmsFactory`. Stub is expected to fail the suite.
+- Maven test resources copy `../../fixtures` onto the test classpath.
+- Evidence: [evidence/implementation/p1-counterexample-suite.txt](../evidence/implementation/p1-counterexample-suite.txt).
+
+### Commands actually run (this machine)
+
+Environment: Temurin JDK 8u504-b01, Maven Wrapper, Spring Boot 2.7.18.
+
+```text
+cd apps/api && JAVA_HOME=/home/box/tools/jdk8u504-b01 ./mvnw test
+# LineageApiApplicationTests: 2 run, 0 fail
+# P1CounterexampleSuiteTest: 8 run, 8 fail (stub)
+# Tests run: 10, Failures: 8; BUILD FAILURE; exit 1
+```
+
+Red is the intended TDD state. Assertions were not skipped or deleted.
+
+### Gaps / blocked
+
+- Real adjacency-list BFS, Java truncation, parent/tree/cross, shortest path
+  (next P1 slice). Suite must stay failing until that work lands.
+- No real SSO / OIDC. No real lineage import.
+
+### Next
+
+Implement `LineageGraphAlgorithms` against these fixtures and `expected.json`.
+Do not treat generator output as expected values.
+
+---
+
 ## Stage: P0 dependency baseline, design gates, contract types
 
 **Goal:** run existing design gates with captured evidence; record the

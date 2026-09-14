@@ -1,0 +1,24 @@
+{
+  "id": "parallel-relations",
+  "title": "Same endpoints, different relation ids: both preserved; derives is parent, reads is cross",
+  "seedId": "seed",
+  "authorizedObjectIds": ["seed", "child"],
+  "objects": [
+    {"id": "seed", "type": "table", "technicalName": "seed", "javaKind": null},
+    {"id": "child", "type": "view", "technicalName": "child", "javaKind": null}
+  ],
+  "relations": [
+    {"id": "e-reads", "source": "seed", "target": "child", "rel": "reads", "sourceOrder": 0},
+    {"id": "e-derives", "source": "seed", "target": "child", "rel": "derives", "sourceOrder": 0}
+  ],
+  "expected": {
+    "treeStatus": "available",
+    "reach": ["seed", "child"],
+    "minHops": {"seed": 0, "child": 1},
+    "layoutRank": {"seed": 0, "child": 1},
+    "parentEdgeIds": {"child": "e-derives"},
+    "treeIds": ["e-derives"],
+    "crossIds": ["e-reads"],
+    "excludedRelationIds": []
+  }
+}

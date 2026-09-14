@@ -1,0 +1,17 @@
+{
+  "id": "path-unknown",
+  "title": "A 257-object chain exceeds the 256-object path cap: unknown + PATH_LENGTH_LIMIT, not not_found",
+  "generate": "chain",
+  "objectCount": 257,
+  "idPrefix": "n-",
+  "edgePrefix": "e-",
+  "rel": "derives",
+  "seedId": "n-000",
+  "targetId": "n-256",
+  "expectedPath": {
+    "status": "unknown",
+    "reason": "PATH_LENGTH_LIMIT",
+    "nodeIds": [],
+    "edgeIds": []
+  }
+}

@@ -1,0 +1,27 @@
+command: JAVA_HOME=/home/box/tools/jdk8u504-b01 ./mvnw test
+cwd: /workspace/DatabaseRelationMap/apps/api
+started: 2026-09-14T11:58:53Z
+note: P1 counterexample suite is TDD-red by design. StubLineageGraphAlgorithms returns empty classify / unknown path with null reason. Assertions were not deleted or weakened.
+----- stdout+stderr (trimmed to surefire) -----
+[INFO] Running com.lineage.api.LineageApiApplicationTests
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.978 s - in com.lineage.api.LineageApiApplicationTests
+[INFO] Running com.lineage.api.domain.graph.P1CounterexampleSuiteTest
+[ERROR] Tests run: 8, Failures: 8, Errors: 0, Skipped: 0, Time elapsed: 0.007 s <<< FAILURE! - in com.lineage.api.domain.graph.P1CounterexampleSuiteTest
+
+[ERROR] Failures:
+[ERROR]   P1CounterexampleSuiteTest.cycleDoesNotForceRewireAndKeepsTail:75->assertClassification:213 expected: <UNAVAILABLE_CYCLE> but was: <AVAILABLE>
+[ERROR]   P1CounterexampleSuiteTest.hiddenIntermediateDoesNotBridgeTail:138->assertClassification:214 expected: <[seed, visible]> but was: <[]>
+[ERROR]   P1CounterexampleSuiteTest.importFixtureAlignsWithHandAuthoredExpected:195 expected: <[root, view-a, proc-b, table-c, java-j, proc-s]> but was: <[]>
+[ERROR]   P1CounterexampleSuiteTest.javaOutEdgesTruncatedFactsRetained:119->assertClassification:214 expected: <[seed, java-j, other]> but was: <[]>
+[ERROR]   P1CounterexampleSuiteTest.parallelRelationsPreservedAndClassified:38->assertClassification:214 expected: <[seed, child]> but was: <[]>
+[ERROR]   P1CounterexampleSuiteTest.pathLengthLimitReturnsUnknown:175 expected: <PATH_LENGTH_LIMIT> but was: <null>
+[ERROR]   P1CounterexampleSuiteTest.sameGraphReorderDoesNotChangeParentTreeCross:100->assertClassification:214 expected: <[seed, left, right, join]> but was: <[]>
+[ERROR]   P1CounterexampleSuiteTest.selfLoopRemovedBeforeIndegree:58->assertClassification:214 expected: <[seed, child]> but was: <[]>
+
+[ERROR] Tests run: 10, Failures: 8, Errors: 0, Skipped: 0
+[INFO] BUILD FAILURE
+----- end -----
+exit_code: 1
+finished: 2026-09-14T11:58:57Z
+environment: Temurin JDK 8u504-b01, Maven Wrapper, Spring Boot 2.7.18
+red_is_ok: true
