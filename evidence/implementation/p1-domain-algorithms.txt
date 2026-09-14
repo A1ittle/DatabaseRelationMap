@@ -1,0 +1,16 @@
+command: JAVA_HOME=/home/box/tools/jdk8u504-b01 ./mvnw test
+cwd: /workspace/DatabaseRelationMap/apps/api
+started: 2026-09-14T12:10:34Z
+note: DefaultLineageGraphAlgorithms replaces the stub. P1CounterexampleSuiteTest and import.json alignment are green. Assertions were not deleted, skipped, or weakened. No SSO / real lineage.
+----- stdout+stderr (trimmed to surefire) -----
+[INFO] Running com.lineage.api.LineageApiApplicationTests
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.993 s - in com.lineage.api.LineageApiApplicationTests
+[INFO] Running com.lineage.api.domain.graph.P1CounterexampleSuiteTest
+[INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.009 s - in com.lineage.api.domain.graph.P1CounterexampleSuiteTest
+
+[INFO] Tests run: 10, Failures: 0, Errors: 0, Skipped: 0
+[INFO] BUILD SUCCESS
+----- end -----
+exit_code: 0
+finished: 2026-09-14T12:10:39Z
+environment: Temurin JDK 8u504-b01, Maven Wrapper, Spring Boot 2.7.18

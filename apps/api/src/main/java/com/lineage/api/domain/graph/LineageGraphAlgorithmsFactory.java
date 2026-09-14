@@ -1,8 +1,7 @@
 package com.lineage.api.domain.graph;
 
 /**
- * Construction seam for tests. Swap the stub for the real implementation in
- * the algorithm PR without editing assertion literals.
+ * Construction seam for tests and the application layer.
  */
 public final class LineageGraphAlgorithmsFactory {
 
@@ -10,6 +9,6 @@ public final class LineageGraphAlgorithmsFactory {
 	}
 
 	public static LineageGraphAlgorithms create() {
-		return new StubLineageGraphAlgorithms();
+		return new DefaultLineageGraphAlgorithms();
 	}
 }
