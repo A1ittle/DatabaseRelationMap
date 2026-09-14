@@ -1,5 +1,46 @@
 # Implementation progress
 
+## Stage: P1 domain graph algorithms (green)
+
+**Goal:** replace `StubLineageGraphAlgorithms` with a real Java 8 adjacency-list
+implementation so the P1 counterexample suite and `fixtures/v1` alignment pass.
+No SSO / real lineage invention. Tests were not skipped or weakened.
+
+**Branch:** `feat/p1-domain-graph-algorithms` (from `main@722cbe3`).
+
+### Done
+
+- `DefaultLineageGraphAlgorithms` implements `LineageGraphAlgorithms`:
+  authorization-first usable edges, self-loop / Java out-edge exclusion,
+  BFS reach + minHops, directed-cycle → `unavailable_cycle` (no force-rewire),
+  DAG main-parent (parent rank+1 desc, strength desc, sourceOrder asc,
+  relationId asc), tree/cross partition, shortest path with 256-object cap.
+- `LineageGraphAlgorithmsFactory.create()` returns the real impl. Stub deleted.
+- Evidence: [evidence/implementation/p1-domain-algorithms.txt](../evidence/implementation/p1-domain-algorithms.txt).
+
+### Commands actually run (this machine)
+
+Environment: Temurin JDK 8u504-b01, Maven Wrapper, Spring Boot 2.7.18.
+
+```text
+cd apps/api && JAVA_HOME=/home/box/tools/jdk8u504-b01 ./mvnw test
+# LineageApiApplicationTests: 2 run, 0 fail
+# P1CounterexampleSuiteTest: 8 run, 0 fail
+# Tests run: 10, Failures: 0; BUILD SUCCESS; exit 0
+```
+
+### Gaps / blocked
+
+- No real SSO / OIDC. No real lineage import.
+- Query budget / incomplete classification is not a P1 acceptance case.
+
+### Next
+
+P2: Flyway from `spec/v1/storage.sql`, import/publish, query context, on a
+real disposable PostgreSQL. Do not treat fixtures as real lineage.
+
+---
+
 ## Stage: P1 counterexample acceptance suite (TDD red)
 
 **Goal:** land independent graph counterexamples and a thin `domain/graph` façade
