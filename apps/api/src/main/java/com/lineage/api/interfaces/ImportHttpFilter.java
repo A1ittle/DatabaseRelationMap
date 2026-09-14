@@ -2,6 +2,7 @@ package com.lineage.api.interfaces;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
@@ -19,8 +20,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lineage.api.interfaces.dto.ErrorBody;
 
 /**
- * CSRF (any non-empty token in open/demo mode) and 50 MiB payload cap for import
- * mutating routes. OIDC is out of scope for this PR — see {@code lineage.security.mode}.
+ * CSRF (any non-empty token in open/demo mode) for mutating import and lineage
+ * routes, 50 MiB payload cap, and optional {@code X-Embed-Groups}. OIDC is out
+ * of scope — see {@code lineage.security.mode}.
  */
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE + 10)
@@ -43,12 +45,17 @@ public class ImportHttpFilter extends OncePerRequestFilter {
 		if (path == null) {
 			return true;
 		}
-		return !path.startsWith("/api/imports");
+		return !(path.startsWith("/api/imports") || path.startsWith("/api/lineage"));
 	}
 
 	@Override
 	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
 			throws ServletException, IOException {
+		List<String> groups = EmbedGroups.parse(request.getHeader(EmbedGroups.HEADER));
+		if (groups != null) {
+			request.setAttribute(EmbedGroups.PRESENT_ATTR, Boolean.TRUE);
+			request.setAttribute(EmbedGroups.ATTR, groups);
+		}
 		if ("POST".equalsIgnoreCase(request.getMethod())) {
 			String lengthHeader = request.getHeader("Content-Length");
 			if (lengthHeader != null) {

@@ -77,6 +77,41 @@ curl -sS -H 'Content-Type: application/json' -H 'X-CSRF-Token: demo' \
 JDBC integration tests (`ImportPublishJdbcTest`) bring up `deploy/` compose and
 use real PostgreSQL. `./mvnw test` from `apps/api` with JDK 8.
 
+### Query APIs and embed groups (P2)
+
+POST `/api/lineage/queries` and POST `/api/lineage/queries/{qid}/projection`
+also require `X-CSRF-Token` (same open-mode rule as import).
+
+**Minimal embed auth (dev stub, not OIDC):**
+
+| Header | Open mode behaviour |
+|---|---|
+| *(omit)* `X-Embed-Groups` | Authorize every object in the active snapshot (local/dev). |
+| `X-Embed-Groups: g1,g2` | Resolve `scope_grant` (permission `view`) plus `object_grant`. **Deny wins.** No scope view and no object allow → empty set. |
+
+Unauthorized or forged object ids return contract `Error` with `NOT_FOUND` (same
+shape; existence is not leaked). A denied seed on create is `INVALID_SEED` for
+both missing and unauthorized seeds.
+
+```bash
+# After publish, open mode (all objects):
+curl -sS 'http://localhost:8080/api/lineage/search?q=root'
+curl -sS -H 'Content-Type: application/json' -H 'X-CSRF-Token: demo' \
+  --data '{"seedId":"root"}' http://localhost:8080/api/lineage/queries
+# Then children / projection / path using the returned meta.queryId.
+
+# Restricted embed (host-trusted groups):
+curl -sS -H 'X-Embed-Groups: g-view' \
+  'http://localhost:8080/api/lineage/search?q=root'
+```
+
+Queries bind the **active snapshot** and `policy_revision` at create time.
+Changing embed groups or bumping `policy_revision` on a live query returns
+`POLICY_CHANGED`. Expired in-memory contexts return `QUERY_EXPIRED` (410).
+
+JDBC tests: `QueryApiJdbcTest` (import+publish fixture, then search / query /
+children / projection / path, plus unauthorized-id cases).
+
 ## Design checks (already in repo)
 
 Requires Python `jsonschema` (`pip install --user -r tools/requirements.txt`).
