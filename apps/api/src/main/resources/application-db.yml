@@ -1,0 +1,16 @@
+# Optional profile `db` — enable when PostgreSQL is available.
+#
+#   export SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/lineage
+#   export SPRING_DATASOURCE_USERNAME=lineage
+#   export SPRING_DATASOURCE_PASSWORD=...   # from deploy/.env, never commit
+#   export FLYWAY_ENABLED=true
+#   ./mvnw spring-boot:run -Dspring-boot.run.profiles=db
+#
+# The default profile still starts /api/health with no database.
+# Setting SPRING_DATASOURCE_URL is enough to enable Flyway even without this
+# profile (unless FLYWAY_ENABLED=false). See deploy/README.md.
+
+spring:
+  flyway:
+    enabled: ${FLYWAY_ENABLED:true}
+    locations: classpath:db/migration

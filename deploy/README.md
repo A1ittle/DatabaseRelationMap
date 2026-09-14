@@ -2,7 +2,7 @@
 
 本目录只提供**嵌入式工具**开发用的临时库，不是治理平台或生产部署。数据卷可随时删掉。
 
-`apps/api` / `apps/web` 不在本分支；API 今日可在无 PG 的情况下启动。本库留给 **P2 Flyway**。
+API 在**无** `SPRING_DATASOURCE_URL` 时仍可启动 `/api/health`。设置该 URL（以及可选 `FLYWAY_ENABLED=true`）后，启动时跑 Flyway `V1__storage.sql`。
 
 ## 启动 / 停止 / 销毁
 
@@ -45,9 +45,10 @@ JDBC:     jdbc:postgresql://localhost:5432/lineage
 | `POSTGRES_DB` | `lineage` | 库名 |
 | `POSTGRES_USER` | `lineage` | 用户 |
 | `POSTGRES_PASSWORD` | `change-me-local` | **仅本地占位** |
-| `SPRING_DATASOURCE_URL` | `jdbc:postgresql://localhost:5432/lineage` | 未来 API |
-| `SPRING_DATASOURCE_USERNAME` | `lineage` | 未来 API |
-| `SPRING_DATASOURCE_PASSWORD` | `change-me-local` | 未来 API，与 PG 占位一致 |
+| `SPRING_DATASOURCE_URL` | `jdbc:postgresql://localhost:5432/lineage` | API JDBC；非空则启动时跑 Flyway |
+| `SPRING_DATASOURCE_USERNAME` | `lineage` | API |
+| `SPRING_DATASOURCE_PASSWORD` | `change-me-local` | API，与 PG 占位一致 |
+| `FLYWAY_ENABLED` | `true` | 有 URL 时默认视为 true；显式 `false` 可关迁移 |
 
 真实 `deploy/.env` 已被 gitignore。不要把生产密码写进仓库。
 
@@ -61,13 +62,42 @@ docker compose -f deploy/docker-compose.yml exec postgres pg_isready -U lineage 
 
 `ps` 中 `postgres` 应为 `healthy`。`wait-pg.sh` 会轮询 Compose `pg_isready` 或宿主机 `pg_isready`，默认 60s。
 
-## 可选：DDL 冒烟（不是 Flyway）
+## Flyway 迁移验收（SRE，需要 Docker）
+
+权威 DDL 是 `apps/api/src/main/resources/db/migration/V1__storage.sql`（与 `spec/v1/storage.sql` 同结构）。
+
+```bash
+cp deploy/.env.example deploy/.env   # 只改本地副本，不要提交
+./deploy/scripts/migrate-verify.sh
+```
+
+脚本会 `up` → `wait-pg` → `./mvnw flyway:migrate`（跑两次证明幂等）→ `flyway:info` → `down -v`。`KEEP_PG=1` 可留下卷。无 Docker 的环境会打印同样步骤并以 **BLOCKED** 退出。
+
+也可手动：
+
+```bash
+docker compose -f deploy/docker-compose.yml up -d
+./deploy/scripts/wait-pg.sh
+cd apps/api
+# 从 deploy/.env 导出 SPRING_DATASOURCE_* ，切勿把密码写进仓库
+./mvnw flyway:migrate -Dflyway.url="$SPRING_DATASOURCE_URL" \
+  -Dflyway.user="$SPRING_DATASOURCE_USERNAME" \
+  -Dflyway.password="$SPRING_DATASOURCE_PASSWORD"
+./mvnw flyway:info -Dflyway.url="$SPRING_DATASOURCE_URL" \
+  -Dflyway.user="$SPRING_DATASOURCE_USERNAME" \
+  -Dflyway.password="$SPRING_DATASOURCE_PASSWORD"
+# 或启动 API 让 Boot 跑迁移：
+# FLYWAY_ENABLED=true ./mvnw spring-boot:run -Dspring-boot.run.profiles=db
+docker compose -f deploy/docker-compose.yml down -v
+```
+
+## 可选：原始 DDL 冒烟（不是 Flyway）
 
 ```bash
 ./deploy/scripts/smoke-storage.sh
 ```
 
-把 `spec/v1/storage.sql` 打进这个可销毁库，只验证 DDL 能执行。失败时先 `down -v` 再来。**P2 才做正式 Flyway 迁移**；本脚本不是生产迁移器。
+把 `spec/v1/storage.sql` 直接打进可销毁库。正式路径是 `migrate-verify.sh` / Flyway V1。失败时先 `down -v`。
 
 ## 回滚 / 停止
 
@@ -91,7 +121,7 @@ docker compose -f deploy/docker-compose.yml exec postgres pg_isready -U lineage 
 - 真实 SSO / 企业 OIDC 与授权映射
 - 生产主机、生产账号与凭证
 - 真实血缘关系数据（`fixtures/` 不是生产数据）
-- 正式 Flyway 迁移与 API 集成测试（P2）
-- `apps/api`、`apps/web` 工程（Engineer 分支）
+- 本机无 Docker 时的 **live Flyway migrate**（agent host 为 BLOCKED；有 Docker 的开发机按上面的 recipe）
+- 真实导入/发布 API（P2 本切片只做迁移与接线）
 
 不要把占位密码或 fixture 当成试点已接通。

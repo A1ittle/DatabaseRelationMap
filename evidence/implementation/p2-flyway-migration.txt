@@ -1,0 +1,50 @@
+command: JAVA_HOME=/home/box/tools/jdk8u504-b01 ./mvnw test
+cwd: /workspace/DatabaseRelationMap/apps/api
+started: 2026-09-14T12:41:20Z
+note: Flyway V1 from spec/v1/storage.sql. Health without datasource still green. Live PG migrate not run.
+----- stdout+stderr (surefire) -----
+[INFO] Running com.lineage.api.LineageApiApplicationTests
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.921 s - in com.lineage.api.LineageApiApplicationTests
+[INFO] Running com.lineage.api.infrastructure.FlywayMigrationResourceTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0 s - in com.lineage.api.infrastructure.FlywayMigrationResourceTest
+[INFO] Running com.lineage.api.infrastructure.OptionalDataSourceEnvironmentPostProcessorTest
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0 s - in com.lineage.api.infrastructure.OptionalDataSourceEnvironmentPostProcessorTest
+[INFO] Running com.lineage.api.domain.graph.P1CounterexampleSuiteTest
+[INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.011 s - in com.lineage.api.domain.graph.P1CounterexampleSuiteTest
+
+[INFO] Tests run: 19, Failures: 0, Errors: 0, Skipped: 0
+[INFO] BUILD SUCCESS
+----- end -----
+exit_code: 0
+finished: 2026-09-14T12:41:24Z
+environment: Temurin JDK 8u504-b01, Maven Wrapper, Spring Boot 2.7.18, Flyway 8.x (Boot BOM)
+
+----- live migrate dry notes -----
+command: command -v docker || echo 'docker: not found'
+result: docker: not found
+
+command: ./deploy/scripts/migrate-verify.sh
+cwd: /workspace/DatabaseRelationMap
+started: 2026-09-14T12:41:27Z
+----- stdout+stderr -----
+BLOCKED: no Docker on this host; live PostgreSQL migrate is not run here.
+SRE recipe (machine with Docker; never commit deploy/.env):
+  cp deploy/.env.example deploy/.env
+  docker compose -f deploy/docker-compose.yml up -d
+  ./deploy/scripts/wait-pg.sh
+  cd apps/api
+  export SPRING_DATASOURCE_URL SPRING_DATASOURCE_USERNAME SPRING_DATASOURCE_PASSWORD
+  # values from deploy/.env — names match deploy/.env.example
+  ./mvnw flyway:migrate -Dflyway.url="$SPRING_DATASOURCE_URL" \
+    -Dflyway.user="$SPRING_DATASOURCE_USERNAME" \
+    -Dflyway.password="$SPRING_DATASOURCE_PASSWORD"
+  ./mvnw flyway:info -Dflyway.url="$SPRING_DATASOURCE_URL" \
+    -Dflyway.user="$SPRING_DATASOURCE_USERNAME" \
+    -Dflyway.password="$SPRING_DATASOURCE_PASSWORD"
+  docker compose -f deploy/docker-compose.yml down -v
+----- end -----
+exit_code: 1
+
+BLOCKED: no Docker on agent host. Live flyway:migrate against PostgreSQL 17 was not executed.
+H2 was not used (SQL is PG-specific: GENERATED ALWAYS AS IDENTITY, functional index).
+No secrets / .env committed. Placeholders remain change-me-local from deploy/.env.example.

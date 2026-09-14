@@ -1,5 +1,60 @@
 # Implementation progress
 
+## Stage: P2 Flyway migration (storage.sql → V1)
+
+**Goal:** convert `spec/v1/storage.sql` into Flyway V1, wire Boot so health still
+starts without a datasource, and leave SRE a disposable-PG verify recipe.
+Java 8 / Spring Boot 2.7. No SSO, no invented credentials. Live migrate against
+PostgreSQL is **BLOCKED** on this agent host (no Docker).
+
+**Branch:** `feat/p2-flyway-storage` (from `main@f4d425f`).
+
+### Done
+
+- `apps/api/src/main/resources/db/migration/V1__storage.sql` — faithful copy of
+  `spec/v1/storage.sql` (single version; Flyway wraps it in one PG transaction).
+- Default profile: `spring.flyway.enabled=${FLYWAY_ENABLED:false}`. Blank
+  `SPRING_DATASOURCE_URL` excludes DataSource/Flyway auto-config via
+  `OptionalDataSourceEnvironmentPostProcessor` so `/api/health` still works.
+- Non-empty URL enables Flyway unless `FLYWAY_ENABLED=false`. Optional profile
+  `db` (`application-db.yml`). flyway-maven-plugin for `flyway:migrate` / `info`.
+- `deploy/scripts/migrate-verify.sh`: up compose → wait-pg → migrate twice →
+  info → `down -v`. Exits **BLOCKED** without Docker and prints the SRE recipe.
+- Tests without Docker: classpath V1 present and matches spec DDL; Flyway
+  defaults; post-processor URL on/off. H2 is not used (PG-specific SQL).
+- Evidence: [evidence/implementation/p2-flyway-migration.txt](../evidence/implementation/p2-flyway-migration.txt).
+
+### Commands actually run (this machine)
+
+Environment: Temurin JDK 8u504-b01, Maven Wrapper, Spring Boot 2.7.18. **No Docker.**
+
+```text
+cd apps/api && JAVA_HOME=/home/box/tools/jdk8u504-b01 ./mvnw test
+# LineageApiApplicationTests: 5 run, 0 fail (health + Flyway defaults)
+# FlywayMigrationResourceTest: 2 run, 0 fail
+# OptionalDataSourceEnvironmentPostProcessorTest: 4 run, 0 fail
+# P1CounterexampleSuiteTest: 8 run, 0 fail
+# Tests run: 19, Failures: 0; BUILD SUCCESS; exit 0
+
+command -v docker || echo 'docker: not found'
+# docker: not found
+./deploy/scripts/migrate-verify.sh
+# BLOCKED: no Docker on this host; exit 1 (SRE recipe printed)
+```
+
+### Gaps / blocked
+
+- **BLOCKED: no Docker on agent host** — live `flyway:migrate` against PG 17 was
+  not executed here. SRE with Docker: `./deploy/scripts/migrate-verify.sh`.
+- No real SSO / OIDC. No import/publish API yet (rest of HANDOFF P2).
+
+### Next
+
+Import/publish, query context, and JDBC integration tests on disposable PG.
+Do not treat fixtures as real lineage.
+
+---
+
 ## Stage: P1 domain graph algorithms (green)
 
 **Goal:** replace `StubLineageGraphAlgorithms` with a real Java 8 adjacency-list
