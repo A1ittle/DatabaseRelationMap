@@ -1,0 +1,66 @@
+P4 visual freeze capture 2026-09-14T17:01Z
+fixture: fixtures/v1/import.json (seed root)
+API+Vite already up; capture:
+API_BASE=http://127.0.0.1:8080
+WEB_BASE=http://127.0.0.1:5173
+API health ok
+fixture already published (search hit root)
+WEB ok http://127.0.0.1:5173
+launch chrome /usr/bin/google-chrome
+goto 1280 tree http://127.0.0.1:5173/?mode=tree&seedId=root&selectedId=view-a
+wrote /workspace/DatabaseRelationMap/evidence/implementation/p4-visual/tree-1280.png
+goto 1280 overview http://127.0.0.1:5173/?mode=overview&seedId=root&selectedId=view-a
+wrote /workspace/DatabaseRelationMap/evidence/implementation/p4-visual/overview-1280.png
+goto 1280 impact http://127.0.0.1:5173/?mode=impact&seedId=root&selectedId=view-a
+wrote /workspace/DatabaseRelationMap/evidence/implementation/p4-visual/impact-1280.png
+goto 1280 path http://127.0.0.1:5173/?mode=path&seedId=root&selectedId=view-a&targetId=java-j
+wrote /workspace/DatabaseRelationMap/evidence/implementation/p4-visual/path-1280.png
+goto 390 tree http://127.0.0.1:5173/?mode=tree&seedId=root&selectedId=view-a
+wrote /workspace/DatabaseRelationMap/evidence/implementation/p4-visual/tree-390.png
+goto 390 overview http://127.0.0.1:5173/?mode=overview&seedId=root&selectedId=view-a
+wrote /workspace/DatabaseRelationMap/evidence/implementation/p4-visual/overview-390.png
+goto 390 impact http://127.0.0.1:5173/?mode=impact&seedId=root&selectedId=view-a
+wrote /workspace/DatabaseRelationMap/evidence/implementation/p4-visual/impact-390.png
+goto 390 path http://127.0.0.1:5173/?mode=path&seedId=root&selectedId=view-a&targetId=java-j
+wrote /workspace/DatabaseRelationMap/evidence/implementation/p4-visual/path-390.png
+copied 8 files to best/ (历史最佳)
+captured tree-1280.png, overview-1280.png, impact-1280.png, path-1280.png, tree-390.png, overview-390.png, impact-390.png, path-390.png
+---
+
+> lineage-web@0.0.0 test
+> vitest run
+
+
+ RUN  v1.6.1 /workspace/DatabaseRelationMap/apps/web
+
+ ✓ src/graph/revision.test.js  (4 tests) 3ms
+ ✓ src/graph/crossList.test.js  (2 tests) 4ms
+ ✓ src/exceptions/queryExceptions.test.js  (7 tests) 5ms
+ ✓ src/api/importClient.test.js  (5 tests) 5ms
+ ✓ src/api/lineageClient.test.js  (5 tests) 5ms
+ ✓ src/url/viewState.test.js  (9 tests) 5ms
+ ✓ src/graph/projectionSession.test.js  (3 tests) 5ms
+ ✓ src/graph/treeFromProjection.test.js  (2 tests) 6ms
+ ✓ src/config.test.js  (2 tests) 3ms
+ ✓ src/graph/layout.test.js  (1 test) 3ms
+ ✓ src/graph/drawnStats.test.js  (2 tests) 2ms
+
+ Test Files  11 passed (11)
+      Tests  42 passed (42)
+   Start at  17:01:15
+   Duration  526ms (transform 356ms, setup 1ms, collect 599ms, tests 46ms, environment 2ms, prepare 635ms)
+
+---
+
+> lineage-web@0.0.0 build
+> vite build
+
+vite v4.5.14 building for production...
+transforming...
+✓ 41 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.45 kB │ gzip:  0.33 kB
+dist/assets/index-d40f94bb.css   10.04 kB │ gzip:  2.79 kB
+dist/assets/index-7dff4c47.js   133.22 kB │ gzip: 43.78 kB
+✓ built in 711ms

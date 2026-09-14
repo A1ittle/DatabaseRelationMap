@@ -1,5 +1,41 @@
 # Implementation progress
 
+## Stage: P4 visual freeze (fixture screenshot protocol)
+
+**Goal:** Align Vue shell CSS tokens with prototype `:root`, document a pixel-
+stable screenshot protocol, capture 8 fixture-only PNGs (4 views × 1280/390).
+No OIDC, no Ling/auto-heal CI, no screenshot-to-code rewrite of the tree.
+
+**Branch:** `feat/p4-visual-freeze` (from `main@dabc628`).
+
+### Done
+
+- `apps/web/src/tokens.css` — prototype hex + oklch tokens; Vue `--tree` /
+  `--cross` / `--unclassified` extras. `html, body` stay transparent; `.shell`
+  uses `--bg`.
+- Tabs / filter chips / panel surfaces / list hover follow prototype chrome
+  (not flowchart topology). Three questions recorded in
+  [CHANGELOG.md](../evidence/implementation/p4-visual/CHANGELOG.md) before the
+  CSS edit.
+- Protocol: [PROTOCOL.md](../evidence/implementation/p4-visual/PROTOCOL.md).
+  Capture: `apps/web/scripts/capture-p4-visual.mjs` (`npm run capture:p4-visual`).
+- Evidence dir `evidence/implementation/p4-visual/` (PNGs + `best/`「历史最佳」).
+
+### Commands actually run (this machine)
+
+See [p4-visual-freeze.txt](../evidence/implementation/p4-visual-freeze.txt).
+
+### Gaps / blocked
+
+- Fixtures are not real lineage. Do not Diff tree topology vs prototype SVG.
+- No SSO / OIDC.
+
+### Next
+
+P5 scale and deploy. A01–A22 remaining evidence.
+
+---
+
 ## Stage: P4 import / publish page + exception states
 
 **Goal:** Vue 2 embedded **数据导入** page against existing import APIs, plus

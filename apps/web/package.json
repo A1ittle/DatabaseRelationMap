@@ -7,13 +7,15 @@
     "build": "vite build",
     "preview": "vite preview",
     "generate:api": "openapi-typescript ../../spec/v1/openapi.json -o src/generated/openapi.d.ts",
-    "test": "vitest run"
+    "test": "vitest run",
+    "capture:p4-visual": "node scripts/capture-p4-visual.mjs"
   },
   "dependencies": {
     "vue": "^2.7.16"
   },
   "devDependencies": {
     "openapi-typescript": "^7.13.0",
+    "playwright-core": "^1.63.0",
     "typescript": "^5.9.3",
     "vite": "^4.5.14",
     "vite-plugin-vue2": "^2.0.3",

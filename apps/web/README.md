@@ -2,7 +2,7 @@
 
 P4 Vue 2 embedded shell for 程序血缘地图: search → create query → four views
 (tree / overview / impact / path) + URL restore + **数据导入** (validate/publish)
-and distinct exception banners. P3 tree / detail / cross / budget keep-old
+and distinct exception banners + visual freeze (fixture screenshots). P3 tree / detail / cross / budget keep-old
 still work. No React Flow (ADR 0001). Graph layout (`src/graph/*`) is separate
 from API/domain. Lists and paths always come from their APIs, never from the
 on-screen tree. Fixtures are **not** real lineage.
@@ -13,10 +13,13 @@ npm run generate:api  # spec/v1/openapi.json → src/generated/openapi.d.ts
 npm run dev           # http://127.0.0.1:5173
 npm run test          # vitest (URL, importClient, exception banners, budget)
 npm run build
+npm run capture:p4-visual  # 8 fixture screenshots → evidence/implementation/p4-visual/
 ```
 
-Iframe-friendly (transparent page background). Graph canvas libraries are
-intentionally not included.
+Iframe-friendly (`html, body` stay transparent; `.shell` uses prototype `--bg`).
+Graph canvas libraries are intentionally not included. Visual freeze protocol:
+[evidence/implementation/p4-visual/PROTOCOL.md](../../evidence/implementation/p4-visual/PROTOCOL.md).
+CSS tokens live in `src/tokens.css` (from `reference/offline-style-update/lineage-map.css`).
 
 ### Config
 
@@ -111,6 +114,27 @@ Needs a running API with `fixtures/v1/import.json` imported and published
     `coverage` / `computationStatus` as quality notices; `FORBIDDEN` /
     `UNAUTHENTICATED` only when the API returns those codes (embed groups /
     demo-header — no invented OIDC mappings). Cycle 环→清单/路径 stays as in (9).
+
+### P4 visual freeze (fixture screenshots)
+
+Same pixel size as the viewport; never scale PNGs before Diff. Desktop
+**1280×800** and narrow **390×844**. Four modes × two viewports = 8 files
+(`tree-1280.png` … `path-390.png`). Reduced motion on; wait until URL restore
+and expand have settled. Compare only the same `fixtures/v1` seed (`seedId=root`,
+`selectedId=view-a`, path `targetId=java-j`) and the same view mode. Do **not**
+force the Vue tree to match the prototype flowchart — tabs / filters / detail /
+list / tokens only. `best/` is the labeled「历史最佳」set.
+
+Needs API `127.0.0.1:8080` (published fixture) and web dev or preview:
+
+```bash
+cd apps/web
+npm run dev                    # already running is fine
+npm run capture:p4-visual      # imports fixtures/v1 if search has no root hit
+```
+
+Requires `playwright-core` (devDependency) and system Chrome
+(`/usr/bin/google-chrome` or `CHROME_PATH`). Exits 2 if API/web is down.
 
 Without a UI, the same expand path can be curled:
 

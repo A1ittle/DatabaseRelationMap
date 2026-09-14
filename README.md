@@ -10,7 +10,7 @@
 | [完整实现设计](docs/07-implementation-design.md) | 已收敛的架构、技术栈、数据模型、算法、API、前端状态、权限及部署 |
 | [开源参考与采用理由](docs/06-opensource-research.md) | 六个项目的已核实能力、源码证据、借鉴点与复用边界 |
 
-HANDOFF 设计默认方案仍为 React + TypeScript + React Flow；Java 21 + Spring Boot 4.1.x；PostgreSQL 17（见 [HANDOFF.md](HANDOFF.md)，不改产品语义）。工程栈按项目管理要求为 **Java 8 + Spring Boot 2.7.x + Vue 2 嵌入式壳**，见 [ADR 0001](docs/adr/0001-java8-vue2-embedded-vs-handoff.md)、[依赖基线](docs/DEPENDENCY_BASELINE.md) 与 [本地运行](docs/RUNBOOK.md)。PostgreSQL 由 SRE 提供，本仓库不提交密钥或 `.env`。P4：四视图 + URL 恢复 + 数据导入/发布页与异常态（见 [进度](docs/IMPLEMENTATION_PROGRESS.md)）。
+HANDOFF 设计默认方案仍为 React + TypeScript + React Flow；Java 21 + Spring Boot 4.1.x；PostgreSQL 17（见 [HANDOFF.md](HANDOFF.md)，不改产品语义）。工程栈按项目管理要求为 **Java 8 + Spring Boot 2.7.x + Vue 2 嵌入式壳**，见 [ADR 0001](docs/adr/0001-java8-vue2-embedded-vs-handoff.md)、[依赖基线](docs/DEPENDENCY_BASELINE.md) 与 [本地运行](docs/RUNBOOK.md)。PostgreSQL 由 SRE 提供，本仓库不提交密钥或 `.env`。P4：四视图 + URL 恢复 + 数据导入/发布页与异常态 + 视觉冻结（fixture 截图协议，见 [进度](docs/IMPLEMENTATION_PROGRESS.md)）。
 
 ## 机器可读规格与示例
 
