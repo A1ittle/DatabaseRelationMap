@@ -263,3 +263,11 @@ Empty Vue 2 embedded frontend and empty Spring Boot 2.7 / Java 8 API start
 locally. See git history on `feat/p0-empty-stack` / PR #1. Stack follows PM
 direction, not the HANDOFF React/TS + Java 21 default.
 [ADR 0001](adr/0001-java8-vue2-embedded-vs-handoff.md).
+
+---
+
+## SRE · P2 migrate-verify (Docker)
+
+- Host installed `docker.io` + compose plugin; ran `./deploy/scripts/migrate-verify.sh` on PR #6 tip.
+- Result: **PASS** (`exit 0`). Evidence: `evidence/implementation/p2-migrate-verify.txt`.
+- `deploy/.env` used from `.env.example` placeholders only; not committed.

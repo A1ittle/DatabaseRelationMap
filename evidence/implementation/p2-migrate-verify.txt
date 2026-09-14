@@ -1,0 +1,25 @@
+DatabaseRelationMap P2 migrate-verify (SRE)
+host: cursor
+date_utc: 2026-09-14T12:48:19Z
+git: 8f486c3 feat(p2): Flyway V1 storage migration and optional JDBC
+branch_base: pr-6 / origin PR #6 tip
+docker: Docker version 26.1.5+dfsg1, build a72d7cd
+compose: Docker Compose version 2.26.1-4
+java: --: line 4: java: command not found
+JAVA_HOME: /home/box/tools/jdk8u504-b01
+note: copied deploy/.env.example -> deploy/.env (gitignored placeholders only; not committed)
+
+Command:
+  ./deploy/scripts/migrate-verify.sh
+
+Observed:
+  - docker compose up -d postgres:17
+  - wait-pg.sh: PostgreSQL is ready (localhost:5432/lineage)
+  - flyway:migrate (1/2) applied V1 storage
+  - flyway:migrate (2/2) idempotent no-op
+  - flyway:info ran
+  - compose down -v destroyed volume lineage_pg_data
+
+exit_code: 0
+RESULT: PASS
+BLOCKED cleared for Docker migrate-verify on this agent host.
