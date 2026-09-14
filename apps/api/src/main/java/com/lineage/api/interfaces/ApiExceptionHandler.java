@@ -25,9 +25,10 @@ public class ApiExceptionHandler {
 	@ExceptionHandler(HttpMessageNotReadableException.class)
 	public ResponseEntity<ErrorBody> handleUnreadable(HttpMessageNotReadableException ex,
 			HttpServletRequest request) {
+		String path = request.getRequestURI();
+		String code = path != null && path.startsWith("/api/imports") ? "IMPORT_INVALID" : "INVALID_ARGUMENT";
 		return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-			.body(new ErrorBody("IMPORT_INVALID", "request body is not valid JSON", RequestIdFilter.from(request),
-				false));
+			.body(new ErrorBody(code, "request body is not valid JSON", RequestIdFilter.from(request), false));
 	}
 
 	@ExceptionHandler({ MissingServletRequestParameterException.class, MethodArgumentTypeMismatchException.class })

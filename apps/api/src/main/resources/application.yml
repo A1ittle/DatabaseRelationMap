@@ -28,6 +28,8 @@ lineage:
   security:
     # open: no SSO (local/dev). demo-header: require X-Lineage-Demo-User.
     # OIDC is a later task — do not set production secrets here.
+    # Optional X-Embed-Groups: g1,g2 resolves scope_grant/object_grant (deny wins).
+    # Omit the header in open mode to authorize every object in the active snapshot.
     mode: ${LINEAGE_SECURITY_MODE:open}
 
 management:

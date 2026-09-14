@@ -65,4 +65,24 @@ public class ApiException extends RuntimeException {
 	public static ApiException unavailable(String message) {
 		return new ApiException("TEMPORARILY_UNAVAILABLE", 503, true, message);
 	}
+
+	public static ApiException invalidSeed(String message) {
+		return new ApiException("INVALID_SEED", 400, false, message);
+	}
+
+	public static ApiException lineageNotCollected(String message) {
+		return new ApiException("LINEAGE_NOT_COLLECTED", 404, false, message);
+	}
+
+	public static ApiException queryExpired(String message) {
+		return new ApiException("QUERY_EXPIRED", 410, false, message);
+	}
+
+	public static ApiException policyChanged(String message) {
+		return new ApiException("POLICY_CHANGED", 409, false, message);
+	}
+
+	public static ApiException projectionLimit(String message) {
+		return new ApiException("PROJECTION_LIMIT", 400, false, message);
+	}
 }

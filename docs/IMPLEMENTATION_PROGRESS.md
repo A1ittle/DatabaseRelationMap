@@ -1,5 +1,61 @@
 # Implementation progress
 
+## Stage: P2 query API + minimal embed auth
+
+**Goal:** Wire lineage query APIs to published snapshots and P1
+`DefaultLineageGraphAlgorithms`. Minimal embed auth via optional
+`X-Embed-Groups` (trust host / dev stub). No enterprise OIDC. Java 8 /
+Spring Boot 2.7. Real JDBC against `deploy/` PostgreSQL.
+
+**Branch:** `feat/p2-query-api-embed-auth` (from `main@4e8dcec`).
+
+### Done
+
+- Embed auth: omit `X-Embed-Groups` in open mode → authorize the full active
+  snapshot. Header present → `scope_grant` view + `object_grant` allow, **deny
+  wins**. Unauthorized/forged object ids share `NOT_FOUND` Error shape.
+- `GET /api/lineage/search` — technical/display name search in the active
+  snapshot within the authorized set (`reveal` vs `recenter` when `queryId` is
+  set).
+- `POST /api/lineage/queries` — query context bound to snapshot +
+  `policy_revision` + seed; default first-layer projection; `QueryResponse`.
+- `GET .../children` — stable cursor pagination of main-tree children.
+- `POST .../projection` — replace projection from `candidateIds` using
+  classify tree/cross; auth before traverse.
+- `GET .../path` — `shortestPath` with the authorized set.
+- Overview / impact / cluster members / node / relations / evidence served
+  from the same in-memory classified graph (no extra traversal). CSRF on POST
+  lineage matches import (`X-CSRF-Token`).
+- JDBC IT `QueryApiJdbcTest`: import+publish fixture then query; unauthorized
+  ID test. Health without DB still 200; lineage without DB is 503.
+
+### Commands actually run (this machine)
+
+Environment: Temurin JDK 8u504-b01, Maven Wrapper, Spring Boot 2.7.18, Docker
+PostgreSQL 17 (`deploy/docker-compose.yml`).
+
+```text
+cd apps/api && JAVA_HOME=/home/box/tools/jdk8u504-b01 ./mvnw test
+# LineageApiApplicationTests: 6 run, 0 fail (health without DB; lineage 503 without DB)
+# QueryApiJdbcTest: 6 run, 0 fail (real JDBC)
+# EmbedAuthzTest: 3 run, 0 fail
+# ImportPublishJdbcTest: 9 run, 0 fail
+# Tests run: 45, Failures: 0; BUILD SUCCESS; exit 0
+```
+
+### Gaps / blocked
+
+- No real SSO / OIDC (open / demo-header + X-Embed-Groups only).
+- Query cache is in-memory per process (idle 15 min / absolute 60 min).
+- Do not treat fixtures as real lineage.
+
+### Next
+
+P3 downstream-tree UI against these APIs.
+
+---
+
+
 ## Stage: P2 import + atomic CAS publish
 
 **Goal:** POST/GET `/api/imports` and POST `/api/imports/{runId}/publish` with

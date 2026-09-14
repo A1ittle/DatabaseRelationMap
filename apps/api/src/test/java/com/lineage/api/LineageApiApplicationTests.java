@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.junit.jupiter.api.Test;
@@ -32,6 +33,14 @@ class LineageApiApplicationTests {
 		mockMvc.perform(get("/api/health"))
 			.andExpect(status().isOk())
 			.andExpect(content().json("{\"status\":\"ok\"}"));
+	}
+
+	@Test
+	void lineageSearchWithoutDatabaseIsUnavailable() throws Exception {
+		mockMvc.perform(get("/api/lineage/search").queryParam("q", "root"))
+			.andExpect(status().isServiceUnavailable())
+			.andExpect(jsonPath("$.code").value("TEMPORARILY_UNAVAILABLE"))
+			.andExpect(jsonPath("$.retryable").value(true));
 	}
 
 	@Test
