@@ -1,5 +1,23 @@
 # Implementation progress
 
+## Stage: Desktop tree = OpenDesign hops canvas
+
+**Goal:** Replace the nested UL tree with the OpenDesign columnar hops canvas
+(NodeCards + SVG edges). Desktop only (≈1280). Do not treat 390 as in-scope.
+
+**Branch:** `feat/tree-opendesign-desktop`.
+
+- `LineageTree.vue` renders columns by `layoutRank` (seed = col 0), `NodeCard.vue`
+  for type block / mono name / badge priority, SVG `edge-layer` via prototype
+  `edgePath`. `TreeNode.vue` removed.
+- P4 capture script and [PROTOCOL.md](../evidence/implementation/p4-visual/PROTOCOL.md)
+  are desktop-only (VIEWPORTS = 1280×800).
+- Evidence: [tree-opendesign-desktop](../evidence/implementation/tree-opendesign-desktop/).
+
+Not 可上线. Fixture-only. No SSO changes.
+
+---
+
 ## Stage: P1 frontend URL snapshot / projection race
 
 **Goal:** Same-seed URL `snapshotId` change recreates the query; stale createQuery / projection failures cannot destroy or roll back a newer epoch; collapse recomputes `candidateIds` and POSTs projection replace.
