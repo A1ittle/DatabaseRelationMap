@@ -1,0 +1,109 @@
+P5 embedded acceptance (Engineer, fixture-only)
+started: 2026-09-15T01:01:59Z
+finished: 2026-09-15T01:02:52Z
+git HEAD at run: 8fca1adf0eb9fd1529f925293b58203d3670fa56 (main@8fca1ad)
+branch: feat/p5-embedded-acceptance
+note: NOT production go-live. NOT scale/backup (SRE). Fixtures are not real lineage. No OIDC.
+environment: Python 3.13.5, Node v22.23.2, npm 10.9.8, Temurin JDK 8u504-b01,
+  Maven Wrapper, Spring Boot 2.7.18, Vue 2.7.16, Vite 4.5.14, vitest 1.6.1,
+  PostgreSQL 17.11 via deploy/docker-compose.yml (container lineage-pg-local, healthy),
+  API already running: Java 8 jar target/api-0.0.1-SNAPSHOT.jar --server.port=8080
+JAVA_HOME=/home/box/tools/jdk8u504-b01
+Auth: lineage.security.mode=open; CSRF X-CSRF-Token: dev on POST; no X-Embed-Groups (authorize full snapshot).
+No secrets / .env committed.
+
+===== design gates =====
+command: python3 tools/validate_design.py
+exit_code: 0
+status PASS; openapiPaths 14; schemas 32
+
+command: node reference/open-design/program-lineage-handoff/spec/verify-tree.mjs
+exit_code: 0
+OK  seed=ods.trade_order  reach=10 tree=9 cross=3
+
+command: node evidence/probe-reference.mjs
+exit_code: 0
+fixtureCounts nodes=17 edges=18
+
+===== apps/web =====
+command: cd apps/web && npm test && npm run build
+exit_code: 0
+vitest 1.6.1: 11 files, 42 tests, 0 fail
+vite build: 41 modules; dist/index.html; dist/assets/index-d40f94bb.css; dist/assets/index-7dff4c47.js
+
+===== apps/api (JDK 8) =====
+command: cd apps/api && JAVA_HOME=/home/box/tools/jdk8u504-b01 ./mvnw test
+started: 2026-09-15T01:02:45Z
+finished: 2026-09-15T01:02:52Z
+exit_code: 0
+LineageApiApplicationTests: 6 run, 0 fail
+FlywayMigrationResourceTest: 2 run, 0 fail
+OptionalDataSourceEnvironmentPostProcessorTest: 4 run, 0 fail
+P1CounterexampleSuiteTest: 8 run, 0 fail
+QueryApiJdbcTest: 6 run, 0 fail (real JDBC; import+publish fixture then search/query/children/projection/path)
+CanonicalJsonTest: 1 run, 0 fail
+ImportValidatorTest: 6 run, 0 fail
+ImportPublishJdbcTest: 9 run, 0 fail (real JDBC)
+EmbedAuthzTest: 3 run, 0 fail
+Tests run: 45, Failures: 0, Errors: 0, Skipped: 0
+BUILD SUCCESS
+PostgreSQL 17.11 jdbc:postgresql://127.0.0.1:5432/lineage Flyway 8.5.13 schema v1 up to date
+
+===== live PG + API chain (curl / urllib, fixtures/v1/import.json) =====
+PG: sudo docker compose -f deploy/docker-compose.yml ps
+  lineage-pg-local  postgres:17  Up (healthy)  0.0.0.0:5432->5432/tcp
+API: GET http://127.0.0.1:8080/api/health
+
+method path                                                      status requestId
+GET    /api/health                                               200    a09e9903-0841-4896-8528-aa550e6f6c3f
+POST   /api/imports  (fixtures/v1/import.json, X-CSRF-Token:dev) 202    449f50b8-2561-4155-8dbe-3c98708d34c5
+GET    /api/imports/2f2a8f87-a75d-464a-808e-9fa585b54afc         200    7e9288f1-6561-45f9-8765-04433fa05263
+POST   /api/imports/{runId}/publish expectedActiveSnapshotId=null 409   986d50a6-5982-447a-8f6e-0235706f0eef
+GET    /api/lineage/search?q=root                                200    d81aa9aa-5d89-4a96-a040-7b0d3169aae3
+POST   /api/lineage/queries {"seedId":"root"}                    201    f3636b22-e17f-4646-a6f4-b6ae0dfffa0a
+GET    /api/lineage/queries/{qid}/children?parentId=root         200    6e8df55d-c17e-4a86-86e3-a2a8c6e29de2
+GET    /api/lineage/queries/{qid}/overview                       200    aea84116-0f0e-4b7c-a0b1-b9abd313d139
+GET    /api/lineage/queries/{qid}/clusters/0:table/members       200    4e61fa47-33b8-477b-ab29-2a0e3f886ed9
+GET    /api/lineage/queries/{qid}/impact                         200    b1a8ac12-3306-4004-986e-a8e0bdf72c5d
+GET    /api/lineage/queries/{qid}/path?targetId=java-j           200    cf81227a-9bb3-4f06-b528-8819c9cf0b93
+POST   /api/lineage/queries/{qid}/projection                     200    7210bcdc-a29d-475c-81ef-1a59e9dc9be2
+GET    /api/lineage/queries/{qid}/relations/e02/evidence         200    d3e61003-2d5e-4f6e-b82a-73e581b17710
+POST   /api/lineage/queries without X-CSRF-Token                 400    2641692b-03f1-4375-af73-e25fb29e5d6c
+
+excerpts:
+- health body: {"status":"ok"}
+- import 202: runId=2f2a8f87-a75d-464a-808e-9fa585b54afc status=published
+  snapshotId=7238bfd2-3380-41af-8828-4614d1d13a0f errorCount=0 warningCount=2
+  (idempotent replay of already-published fixtures/v1 batchKey=demo-001)
+- GET import issues: JAVA_OUT_EDGE warning, CYCLE warning (stored fact; fixture-authored)
+- publish 409 PUBLISH_CONFLICT: "active snapshot does not match expectedActiveSnapshotId"
+  because this disposable PG already had that snapshot active; null expected is correct CAS reject.
+  Fresh import→publish on empty catalog is covered by ImportPublishJdbcTest / QueryApiJdbcTest this session.
+- search: items[0].object.id=root action=recenter total=1
+- create query 201: queryId=64687a09-1e97-42ab-9be7-069c26ff74b4
+  snapshotId=7238bfd2-3380-41af-8828-4614d1d13a0f
+  treeStatus=available algorithmVersion=lineage-tree-v1
+  stats downstream=5 javaTerminals=1 leaves=1 crossEdges=4 countStatus=exact
+  default projection nodes: root, view-a, proc-s
+- children of root: view-a (e02), proc-s (e10); page.total=2 hasMore=false
+- overview clusters: 0:table, 1:view, 4:java, 1:procedure, 2:procedure, 3:table; total=6
+- cluster 0:table members: root
+- path java-j: status=found nodes root → java-j edge e07 kind=cross
+- projection clientRevision=1 nodes root, view-a
+- evidence e02: id=ev-demo sourceRef=fixture:manually-authored
+  description="Synthetic design example, not real parsed lineage."
+- missing CSRF: code=INVALID_ARGUMENT message="X-CSRF-Token is required" retryable=false
+
+command: cd apps/web && ./scripts/demo-deep-expand.sh
+exit_code: 0
+search hits: ['root']
+queryId fb6df140-c04c-4bbb-9cc1-c630bcf2c548 default nodes ['root', 'view-a', 'proc-s']
+children of view-a ['proc-b'] → projection maxRank 2
+children of proc-b ['table-c'] → projection maxRank 3
+children of table-c ['java-j'] → projection maxRank 4
+
+Live chain ran BEFORE ./mvnw test. JDBC tests TRUNCATE catalog tables; the long-lived
+:8080 process may no longer see the published snapshot after tests. Evidence above is
+from the pre-test process.
+
+No .env committed. Placeholders remain change-me-local from deploy/.env.example.

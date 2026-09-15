@@ -17,7 +17,10 @@ npm run capture:p4-visual  # 8 fixture screenshots → evidence/implementation/p
 ```
 
 Iframe-friendly (`html, body` stay transparent; `.shell` uses prototype `--bg`).
-Graph canvas libraries are intentionally not included. Visual freeze protocol:
+Host mount (iframe / same-origin `/api` proxy, CSRF, `X-Embed-Groups`) is in
+[docs/IMPLEMENTATION_ACCEPTANCE.md](../../docs/IMPLEMENTATION_ACCEPTANCE.md)
+and [docs/RUNBOOK.md](../../docs/RUNBOOK.md). Graph canvas libraries are
+intentionally not included. Visual freeze protocol:
 [evidence/implementation/p4-visual/PROTOCOL.md](../../evidence/implementation/p4-visual/PROTOCOL.md).
 CSS tokens live in `src/tokens.css` (from `reference/offline-style-update/lineage-map.css`).
 
