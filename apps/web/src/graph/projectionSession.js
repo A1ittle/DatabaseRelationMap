@@ -49,17 +49,29 @@ export function resolveProjectionOutcome(input) {
   var attemptedCandidates = input.attemptedCandidates || previousCandidates
   var seedId = input.seedId
 
-  if (error) {
-    if (isAbortError(error)) {
-      return {
-        canvas: canvas,
-        candidateIds: previousCandidates,
-        applied: false,
-        aborted: true,
-        error: '',
-        notice: ''
-      }
+  if (error && isAbortError(error)) {
+    return {
+      canvas: canvas,
+      candidateIds: previousCandidates,
+      applied: false,
+      aborted: true,
+      error: '',
+      notice: ''
     }
+  }
+
+  if (guard && typeof guard.isStale === 'function' && guard.isStale(sentRevision, sentEpoch)) {
+    return {
+      canvas: canvas,
+      candidateIds: attemptedCandidates,
+      applied: false,
+      stale: true,
+      error: '',
+      notice: '已丢弃过期 projection（revision ' + sentRevision + '）'
+    }
+  }
+
+  if (error) {
     if (isProjectionLimitError(error)) {
       return {
         canvas: canvas,

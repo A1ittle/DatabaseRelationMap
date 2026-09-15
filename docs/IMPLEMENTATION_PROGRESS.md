@@ -1,5 +1,17 @@
 # Implementation progress
 
+## Stage: P1 frontend URL snapshot / projection race
+
+**Goal:** Same-seed URL `snapshotId` change recreates the query; stale createQuery / projection failures cannot destroy or roll back a newer epoch; collapse recomputes `candidateIds` and POSTs projection replace.
+
+**Branch:** `feat/fix-url-snapshot-projection-race`.
+
+URL param names unchanged (`seedId`, `snapshotId`, …; never `queryId`). Empty/null `snapshotId` still means follow the active snapshot, but restore no longer keeps the previous query when that value changes.
+
+Evidence: [fix-url-snapshot-projection-race.txt](../evidence/implementation/fix-url-snapshot-projection-race.txt).
+
+---
+
 ## Stage: P5 embedded acceptance (known limits)
 
 **Goal:** Record what this checkout actually runs locally for the embedded Vue 2

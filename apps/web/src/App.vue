@@ -168,6 +168,13 @@ import {
   mergeCandidateIds
 } from './graph/treeFromProjection.js'
 import {
+  candidateIdsAfterCollapse,
+  candidateSetsEqual,
+  shouldApplyQueryFailure,
+  shouldRecreateQuery,
+  shouldRollbackCandidates
+} from './graph/urlSnapshotRace.js'
+import {
   ALL_TYPES,
   cycleNotice,
   isAllTypes,
@@ -250,6 +257,7 @@ export default {
       projectInFlight: false,
       pins: [],
       abortCtl: freshAbort(),
+      projectionAbortCtl: freshAbort(),
       viewNonce: 0,
       mode: 'tree',
       filterTypes: ALL_TYPES.slice(),
@@ -412,7 +420,8 @@ export default {
       var seed = state.seedId
       var selected = state.selectedId
       var snap = state.snapshotId
-      if (seed && seed !== this.seedId) {
+      var metaSnap = this.meta && this.meta.snapshotId
+      if (shouldRecreateQuery(seed, snap, this.seedId, metaSnap)) {
         this.createQuery(seed, snap, { restoreSelectedId: selected, restoringUrl: true })
         return
       }
@@ -503,6 +512,16 @@ export default {
       this.evidenceRelationId = null
       this.evidenceItems = []
     },
+    abortProjectionInFlight: function () {
+      if (this.projectionAbortCtl && this.projectionAbortCtl.abort) {
+        try {
+          this.projectionAbortCtl.abort()
+        } catch (err) {
+          /* ignore */
+        }
+      }
+      this.projectionAbortCtl = freshAbort()
+    },
     cancelInFlight: function () {
       if (this.abortCtl && this.abortCtl.abort) {
         try {
@@ -512,6 +531,7 @@ export default {
         }
       }
       this.abortCtl = freshAbort()
+      this.abortProjectionInFlight()
       this.searchSeq += 1
       this.detailSeq += 1
       this.overviewSeq += 1
@@ -589,7 +609,7 @@ export default {
       lineageClient
         .createQuery(seedId, snapshotId || null, { signal: this.abortSignal() })
         .then(function (res) {
-          if (sentEpoch !== self.revision.epoch()) {
+          if (!shouldApplyQueryFailure(sentEpoch, self.revision.epoch())) {
             return
           }
           self.meta = res.meta
@@ -636,12 +656,15 @@ export default {
           self.writeUrl()
         })
         .catch(function (err) {
-          if (isAbortError(err)) {
+          if (!shouldApplyQueryFailure(sentEpoch, self.revision.epoch()) || isAbortError(err)) {
             return
           }
           self.fail(err, '创建查询失败')
         })
         .then(function () {
+          if (!shouldApplyQueryFailure(sentEpoch, self.revision.epoch())) {
+            return
+          }
           self.restoringUrl = false
           self.syncingUrl = false
         })
@@ -666,7 +689,7 @@ export default {
         seedId: this.seedId
       })
       if (outcome.aborted) {
-        return false
+        return outcome
       }
       if (outcome.applied && outcome.canvas) {
         this.projection = outcome.canvas.projection
@@ -693,10 +716,10 @@ export default {
         this.error = ''
         this.exception = null
       }
-      if (outcome.notice) {
+      if (outcome.notice && !outcome.stale) {
         this.notice = outcome.notice
       }
-      return outcome.applied
+      return outcome
     },
     replaceProjection: function (opts) {
       var self = this
@@ -716,9 +739,11 @@ export default {
         revealSelectedPath: !!opts.revealSelectedPath,
         clientRevision: sent
       }
+      this.abortProjectionInFlight()
+      var projSignal = this.projectionAbortCtl && this.projectionAbortCtl.signal
       this.projectInFlight = true
       return lineageClient
-        .projection(this.queryId, body, { signal: this.abortSignal() })
+        .projection(this.queryId, body, { signal: projSignal })
         .then(function (res) {
           return self.commitProjectionResult({
             projection: res,
@@ -730,7 +755,7 @@ export default {
         })
         .catch(function (err) {
           if (isAbortError(err)) {
-            return false
+            return { applied: false, aborted: true }
           }
           return self.commitProjectionResult({
             error: err,
@@ -740,18 +765,41 @@ export default {
             attemptedCandidates: body.candidateIds
           })
         })
-        .then(function (applied) {
+        .then(function (outcome) {
           self.projectInFlight = false
-          return applied
+          return outcome
         })
     },
     toggleExpand: function (nodeId) {
       if (this.expanded[nodeId]) {
         this.$delete(this.expanded, nodeId)
+        this.releaseCollapsedCandidates()
         return
       }
       this.$set(this.expanded, nodeId, true)
       this.fetchChildrenAndProject(nodeId, false)
+    },
+    releaseCollapsedCandidates: function () {
+      var self = this
+      if (!this.queryId) {
+        return
+      }
+      var previousCandidates = this.candidateIds.slice()
+      var next = candidateIdsAfterCollapse({
+        seedId: this.seedId,
+        expanded: this.expanded,
+        childPages: this.childPages,
+        pins: this.pins
+      })
+      if (candidateSetsEqual(previousCandidates, next)) {
+        return
+      }
+      this.candidateIds = next
+      this.replaceProjection({ previousCandidates: previousCandidates }).then(function (outcome) {
+        if (shouldRollbackCandidates(outcome)) {
+          self.candidateIds = previousCandidates
+        }
+      })
     },
     loadMoreChildren: function (nodeId) {
       this.fetchChildrenAndProject(nodeId, true)
@@ -778,6 +826,7 @@ export default {
       if (!this.queryId) {
         return
       }
+      var sentEpoch = this.revision.epoch()
       var pageState = this.childPages[nodeId] || {}
       var extra = { limit: 50, signal: this.abortSignal() }
       if (useCursor && pageState.nextCursor) {
@@ -791,25 +840,34 @@ export default {
       lineageClient
         .children(this.queryId, nodeId, extra)
         .then(function (page) {
+          if (!shouldApplyQueryFailure(sentEpoch, self.revision.epoch())) {
+            return
+          }
           var extraIds = ((page && page.items) || []).map(function (item) {
             return item.object && item.object.id
           })
           var previousCandidates = self.candidateIds.slice()
           self.candidateIds = mergeCandidateIds(self.candidateIds, extraIds, self.seedId)
-          return self.replaceProjection({ previousCandidates: previousCandidates }).then(function (ok) {
-            if (ok) {
-              self.recordChildPage(nodeId, page, useCursor)
-            } else {
+          return self.replaceProjection({ previousCandidates: previousCandidates }).then(function (outcome) {
+            if (!shouldApplyQueryFailure(sentEpoch, self.revision.epoch())) {
+              return
+            }
+            if (shouldRollbackCandidates(outcome)) {
               self.candidateIds = previousCandidates
               self.$set(
                 self.childPages,
                 nodeId,
                 Object.assign({}, pageState, { loading: false })
               )
+            } else {
+              self.recordChildPage(nodeId, page, useCursor)
             }
           })
         })
         .catch(function (err) {
+          if (!shouldApplyQueryFailure(sentEpoch, self.revision.epoch())) {
+            return
+          }
           self.$set(
             self.childPages,
             nodeId,
@@ -824,13 +882,35 @@ export default {
     recordChildPage: function (nodeId, page, append) {
       var info = page && page.page ? page.page : {}
       var prev = this.childPages[nodeId] || {}
+      var incoming = []
+      var items = (page && page.items) || []
+      var i
+      var cid
+      for (i = 0; i < items.length; i++) {
+        cid = items[i] && items[i].object && items[i].object.id
+        if (cid) {
+          incoming.push(cid)
+        }
+      }
+      var ids = []
+      var seen = {}
+      var source = append && prev.ids && prev.ids.length ? prev.ids.concat(incoming) : incoming
+      for (i = 0; i < source.length; i++) {
+        cid = source[i]
+        if (!cid || seen[cid]) {
+          continue
+        }
+        seen[cid] = true
+        ids.push(cid)
+      }
       this.$set(this.childPages, nodeId, {
         nextCursor: info.nextCursor || null,
         hasMore: !!info.hasMore,
         total: info.total,
         loading: false,
         loaded: true,
-        append: append || prev.loaded
+        append: append || prev.loaded,
+        ids: ids
       })
     },
     ensureCandidateAndSelect: function (id, reveal) {
@@ -841,14 +921,18 @@ export default {
         this.pins = mergeCandidateIds(this.pins, [id], this.seedId)
         this.candidateIds = mergeCandidateIds(this.candidateIds, this.pins, this.seedId)
         var needReveal = !!reveal || !this.index.nodesById[id]
+        var sentEpoch = this.revision.epoch()
         this.replaceProjection({
           revealSelectedPath: needReveal,
           selectedId: id,
           previousCandidates: previousCandidates
-        }).then(function (ok) {
-          if (ok) {
+        }).then(function (outcome) {
+          if (!shouldApplyQueryFailure(sentEpoch, self.revision.epoch())) {
+            return
+          }
+          if (outcome && outcome.applied) {
             self.selectNode(id)
-          } else {
+          } else if (shouldRollbackCandidates(outcome)) {
             self.pins = previousPins
             self.candidateIds = previousCandidates
           }

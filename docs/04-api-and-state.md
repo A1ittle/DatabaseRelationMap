@@ -36,7 +36,7 @@
 
 ## UI 状态与 URL
 
-URL 保留 `seedId,snapshotId,mode,selectedId,layoutDepth,types,pathTargetId`；不保存 queryId 作为可转交凭据。expanded 页、候选集合、定位 pin、视口在会话内。恢复链接先重新鉴权建 query，再定位 selectedId；没有 snapshotId 则显示“最新版本”。
+URL 保留 `seedId,snapshotId,mode,selectedId,layoutDepth,types,pathTargetId`；不保存 queryId 作为可转交凭据。expanded 页、候选集合、定位 pin、视口在会话内。恢复链接先重新鉴权建 query，再定位 selectedId；没有 snapshotId 则显示“最新版本”。同一 `seedId` 下 `snapshotId` 变化（含清空/省略以跟随活动快照）必须重建 query，不得沿用旧查询与旧投影。参数名未变。
 
 `layoutDepth` 是前端首次选取候选对象的主树层数（1/2）；全部走 overview。加载第二层按父节点候选分页进行并受绘制预算控制，不新增一个隐含无限数据接口。
 
