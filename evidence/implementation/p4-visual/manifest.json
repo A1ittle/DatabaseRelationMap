@@ -1,0 +1,36 @@
+{
+  "seedId": "root",
+  "selectedId": "view-a",
+  "targetId": "java-j",
+  "viewports": [
+    {
+      "name": "1280",
+      "width": 1280,
+      "height": 800
+    },
+    {
+      "name": "390",
+      "width": 390,
+      "height": 844
+    }
+  ],
+  "modes": [
+    "tree",
+    "overview",
+    "impact",
+    "path"
+  ],
+  "files": [
+    "tree-1280.png",
+    "overview-1280.png",
+    "impact-1280.png",
+    "path-1280.png",
+    "tree-390.png",
+    "overview-390.png",
+    "impact-390.png",
+    "path-390.png"
+  ],
+  "api": "http://127.0.0.1:8080",
+  "web": "http://127.0.0.1:5173",
+  "note": "fixtures/v1 only; do not scale PNGs before Diff"
+}

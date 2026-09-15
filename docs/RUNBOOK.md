@@ -30,6 +30,14 @@ Deep-expand demo against a published fixture (exits 2 if API is down):
 cd apps/web && ./scripts/demo-deep-expand.sh
 ```
 
+P4 visual freeze (8 PNGs, fixture seed only; protocol in
+`evidence/implementation/p4-visual/PROTOCOL.md`):
+
+```bash
+cd apps/web && npm run capture:p4-visual
+# API 127.0.0.1:8080 + npm run dev|preview; imports fixtures/v1 if needed
+```
+
 `generate:api` is types-only (`openapi-typescript`). The committed
 `src/generated/openapi.d.ts` is enough for CI-less clones; re-run after
 OpenAPI edits and commit the result.

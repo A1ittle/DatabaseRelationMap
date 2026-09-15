@@ -1,0 +1,65 @@
+/* Prototype :root tokens copied from
+   reference/offline-style-update/lineage-map.css (hex first, oklch overlay).
+   Extra --tree / --cross / --unclassified are Vue kind colors, not a flowchart
+   rewrite. html/body stay transparent for iframe; .shell uses --bg. */
+:root {
+  --bg: #f6f9fc;
+  --surface: #ffffff;
+  --fg: #121c23;
+  --muted: #444f57;
+  --border: #d9dfe3;
+  --accent: #299236;
+  --font-display: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  --success: #15561d;
+  --warn: #784600;
+  --danger: #9e2225;
+  --table: #324457;
+  --view: #004d51;
+  --proc: #633f00;
+  --java: #37395c;
+  --inspect-w: 320px;
+  --radius: 6px;
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+  --hover: #eff2f6;
+  --press: #e4e8ed;
+  --fg-hover: #060e15;
+  --fg-press: #000408;
+  --tree: #299236;
+  --cross: #425468;
+  --unclassified: #8250df;
+}
+
+@supports (color: oklch(0% 0 0)) {
+  :root {
+    --bg: oklch(98% 0.005 250);
+    --surface: oklch(100% 0 0);
+    --fg: oklch(22% 0.02 240);
+    --muted: oklch(42% 0.02 240);
+    --border: oklch(90% 0.008 240);
+    --accent: oklch(58% 0.16 145);
+    --success: oklch(40% 0.11 145);
+    --warn: oklch(44% 0.12 75);
+    --danger: oklch(46% 0.16 25);
+    --table: oklch(38% 0.04 250);
+    --view: oklch(38% 0.07 200);
+    --proc: oklch(40% 0.09 75);
+    --java: oklch(36% 0.06 280);
+    --hover: oklch(96% 0.006 250);
+    --press: oklch(93% 0.008 250);
+    --fg-hover: oklch(16% 0.02 240);
+    --fg-press: oklch(10% 0.02 240);
+    --tree: oklch(58% 0.16 145);
+    --cross: oklch(44% 0.04 250);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
