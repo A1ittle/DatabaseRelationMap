@@ -29,7 +29,7 @@ CSS tokens live in `src/tokens.css` (from `reference/offline-style-update/lineag
 | Variable | Default | Meaning |
 |---|---|---|
 | `VITE_API_BASE` | `http://127.0.0.1:8080` | Lineage API origin. Empty string = same-origin (uses Vite `/api` proxy in `npm run dev`). |
-| `VITE_CSRF_TOKEN` | `dev` | Sent as `X-CSRF-Token` on POSTs (open-mode API accepts any non-empty value). |
+| `VITE_CSRF_TOKEN` | `dev` | Sent as `X-CSRF-Token` on POSTs. Must match API `lineage.csrf.token` (default `dev`). Hosts must set a non-guessable token. |
 | `VITE_EMBED_GROUPS` | *(omit)* | Optional `X-Embed-Groups` (host-trusted groups; deny wins on the API). |
 
 Copy `.env.example` to `.env.local` to override. Do not commit secrets.

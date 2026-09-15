@@ -242,6 +242,32 @@ public class ImportJdbcRepository {
 			ISSUE_MAPPER, runId, Long.valueOf(afterIssueId), Integer.valueOf(limit));
 	}
 
+	public boolean hasIngestGrant(String scopeId, List<String> groups) {
+		if (scopeId == null || groups == null || groups.isEmpty()) {
+			return false;
+		}
+		String sql = "SELECT COUNT(*) FROM scope_grant WHERE scope_id = ? AND permission = 'ingest' AND group_id IN ("
+			+ placeholders(groups.size()) + ")";
+		Object[] args = new Object[groups.size() + 1];
+		args[0] = scopeId;
+		for (int i = 0; i < groups.size(); i++) {
+			args[i + 1] = groups.get(i);
+		}
+		Integer n = jdbc.queryForObject(sql, Integer.class, args);
+		return n != null && n.intValue() > 0;
+	}
+
+	private static String placeholders(int n) {
+		StringBuilder sb = new StringBuilder();
+		for (int i = 0; i < n; i++) {
+			if (i > 0) {
+				sb.append(',');
+			}
+			sb.append('?');
+		}
+		return sb.toString();
+	}
+
 	public CatalogScopeRow lockScope(String scopeId) {
 		List<CatalogScopeRow> rows = jdbc.query(
 			"SELECT scope_id, active_snapshot_id, revision FROM catalog_scope WHERE scope_id = ? FOR UPDATE",

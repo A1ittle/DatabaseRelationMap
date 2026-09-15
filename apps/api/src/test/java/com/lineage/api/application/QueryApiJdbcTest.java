@@ -111,7 +111,7 @@ class QueryApiJdbcTest {
 			+ "\"clientRevision\":1}";
 		mockMvc.perform(post("/api/lineage/queries/" + qid + "/projection")
 			.contentType(MediaType.APPLICATION_JSON)
-			.header("X-CSRF-Token", "demo")
+			.header("X-CSRF-Token", "dev")
 			.content(projectionBody))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.clientRevision").value(1))
@@ -169,7 +169,7 @@ class QueryApiJdbcTest {
 
 		mockMvc.perform(post("/api/lineage/queries/" + qid + "/projection")
 			.contentType(MediaType.APPLICATION_JSON)
-			.header("X-CSRF-Token", "demo")
+			.header("X-CSRF-Token", "dev")
 			.header("X-Embed-Groups", "g-view")
 			.content("{\"candidateIds\":[\"root\",\"java-j\"],\"selectedId\":\"root\","
 				+ "\"types\":[\"table\",\"view\",\"procedure\",\"java\"],\"revealSelectedPath\":false,"
@@ -179,7 +179,7 @@ class QueryApiJdbcTest {
 
 		mockMvc.perform(post("/api/lineage/queries")
 			.contentType(MediaType.APPLICATION_JSON)
-			.header("X-CSRF-Token", "demo")
+			.header("X-CSRF-Token", "dev")
 			.header("X-Embed-Groups", "g-view")
 			.content("{\"seedId\":\"java-j\"}"))
 			.andExpect(status().isBadRequest())
@@ -187,7 +187,7 @@ class QueryApiJdbcTest {
 
 		mockMvc.perform(post("/api/lineage/queries")
 			.contentType(MediaType.APPLICATION_JSON)
-			.header("X-CSRF-Token", "demo")
+			.header("X-CSRF-Token", "dev")
 			.header("X-Embed-Groups", "g-view")
 			.content("{\"seedId\":\"does-not-exist\"}"))
 			.andExpect(status().isBadRequest())
@@ -255,7 +255,7 @@ class QueryApiJdbcTest {
 	private JsonNode createQuery(String seedId, String groups) throws Exception {
 		org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder req = post("/api/lineage/queries")
 			.contentType(MediaType.APPLICATION_JSON)
-			.header("X-CSRF-Token", "demo")
+			.header("X-CSRF-Token", "dev")
 			.content("{\"seedId\":\"" + seedId + "\"}");
 		if (groups != null) {
 			req.header("X-Embed-Groups", groups);
@@ -270,14 +270,14 @@ class QueryApiJdbcTest {
 		JsonNode fixture = loadFixture();
 		MvcResult created = mockMvc.perform(post("/api/imports")
 			.contentType(MediaType.APPLICATION_JSON)
-			.header("X-CSRF-Token", "demo")
+			.header("X-CSRF-Token", "dev")
 			.content(mapper.writeValueAsBytes(fixture)))
 			.andExpect(status().isAccepted())
 			.andReturn();
 		String runId = mapper.readTree(created.getResponse().getContentAsByteArray()).get("runId").asText();
 		mockMvc.perform(post("/api/imports/" + runId + "/publish")
 			.contentType(MediaType.APPLICATION_JSON)
-			.header("X-CSRF-Token", "demo")
+			.header("X-CSRF-Token", "dev")
 			.content("{\"expectedActiveSnapshotId\":null}"))
 			.andExpect(status().isOk());
 	}

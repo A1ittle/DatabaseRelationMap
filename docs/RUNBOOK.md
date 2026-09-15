@@ -25,8 +25,11 @@ npm run test         # vitest
 npm run build
 ```
 
-Defaults: `VITE_API_BASE=http://127.0.0.1:8080`, POST header `X-CSRF-Token: dev`.
-Optional `VITE_EMBED_GROUPS`. See `apps/web/.env.example` and `apps/web/README.md`.
+Defaults: `VITE_API_BASE=http://127.0.0.1:8080`, POST header `X-CSRF-Token: dev`
+(must match API `lineage.csrf.token`, default `dev`). Optional `VITE_EMBED_GROUPS`.
+See `apps/web/.env.example` and `apps/web/README.md`. Preferred production mount is
+same-origin reverse-proxy (`VITE_API_BASE=` empty); then the browser sends no
+`Origin` and the API does not set `Access-Control-Allow-Origin`.
 
 Deep-expand demo against a published fixture (exits 2 if API is down):
 
@@ -84,16 +87,22 @@ Never commit `deploy/.env`.
 ### Import / CAS publish (P2)
 
 Default `lineage.security.mode=open` — no OIDC (later task). POST `/api/imports`
-and `/api/imports/{runId}/publish` require a non-empty `X-CSRF-Token` (any value
-in open mode). Optional `LINEAGE_SECURITY_MODE=demo-header` plus
-`X-Lineage-Demo-User`.
+and `/api/imports/{runId}/publish` require `X-CSRF-Token` equal to
+`lineage.csrf.token` / `LINEAGE_CSRF_TOKEN` (local default `dev`; constant-time
+compare). Hosts must set a non-guessable token for real embeds. Optional
+`LINEAGE_SECURITY_MODE=demo-header` plus `X-Lineage-Demo-User`.
+
+When `X-Embed-Groups` is **present**, import and publish also require
+`scope_grant` permission `ingest` on the target scope (body `scopeId` for import;
+the run's scope for publish). Missing grant → 403 `FORBIDDEN`. Omit the header in
+open/local mode for full-open ingest (still needs matching CSRF).
 
 ```bash
 # PostgreSQL from deploy/, then API with SPRING_DATASOURCE_URL set
-curl -sS -H 'Content-Type: application/json' -H 'X-CSRF-Token: demo' \
+curl -sS -H 'Content-Type: application/json' -H 'X-CSRF-Token: dev' \
   --data-binary @fixtures/v1/import.json http://localhost:8080/api/imports
 curl -sS http://localhost:8080/api/imports/{runId}
-curl -sS -H 'Content-Type: application/json' -H 'X-CSRF-Token: demo' \
+curl -sS -H 'Content-Type: application/json' -H 'X-CSRF-Token: dev' \
   --data '{"expectedActiveSnapshotId":null}' \
   http://localhost:8080/api/imports/{runId}/publish
 ```
@@ -120,14 +129,14 @@ use real PostgreSQL. `./mvnw test` from `apps/api` with JDK 8.
 ### Query APIs and embed groups (P2)
 
 POST `/api/lineage/queries` and POST `/api/lineage/queries/{qid}/projection`
-also require `X-CSRF-Token` (same open-mode rule as import).
+also require `X-CSRF-Token` matching `lineage.csrf.token` (same rule as import).
 
 **Minimal embed auth (dev stub, not OIDC):**
 
 | Header | Open mode behaviour |
 |---|---|
-| *(omit)* `X-Embed-Groups` | Authorize every object in the active snapshot (local/dev). |
-| `X-Embed-Groups: g1,g2` | Resolve `scope_grant` (permission `view`) plus `object_grant`. **Deny wins.** No scope view and no object allow → empty set. |
+| *(omit)* `X-Embed-Groups` | Authorize every object in the active snapshot (local/dev). Import/publish stay full-open (matching CSRF still required). |
+| `X-Embed-Groups: g1,g2` | Query: resolve `scope_grant` (permission `view`) plus `object_grant`. **Deny wins.** No scope view and no object allow → empty set. Import/publish: require `scope_grant` permission `ingest` on the target scope or 403 `FORBIDDEN`. |
 
 Unauthorized or forged object ids return contract `Error` with `NOT_FOUND` (same
 shape; existence is not leaked). A denied seed on create is `INVALID_SEED` for
@@ -136,7 +145,7 @@ both missing and unauthorized seeds.
 ```bash
 # After publish, open mode (all objects):
 curl -sS 'http://localhost:8080/api/lineage/search?q=root'
-curl -sS -H 'Content-Type: application/json' -H 'X-CSRF-Token: demo' \
+curl -sS -H 'Content-Type: application/json' -H 'X-CSRF-Token: dev' \
   --data '{"seedId":"root"}' http://localhost:8080/api/lineage/queries
 # Then children / projection / path using the returned meta.queryId.
 
@@ -149,8 +158,12 @@ Queries bind the **active snapshot** and `policy_revision` at create time.
 Changing embed groups or bumping `policy_revision` on a live query returns
 `POLICY_CHANGED`. Expired in-memory contexts return `QUERY_EXPIRED` (410).
 
-Open mode answers CORS preflight (`Origin` + `X-CSRF-Token` /
-`X-Embed-Groups`) so the Vite shell on port 5173 can call port 8080.
+CORS: `lineage.cors.allowed-origins` / `LINEAGE_CORS_ALLOWED_ORIGINS` is a
+comma-separated exact-match allowlist (local default
+`http://127.0.0.1:5173,http://localhost:5173` plus preview 4173). Only listed
+origins get `Access-Control-Allow-Origin`; unknown Origins are never echoed.
+OPTIONS preflight succeeds for allowlisted origins. Prefer same-origin reverse
+proxy so the browser omits `Origin` and ACAO is unnecessary.
 
 JDBC tests: `QueryApiJdbcTest` (import+publish fixture, then search / query /
 children / projection / path, plus unauthorized-id cases).

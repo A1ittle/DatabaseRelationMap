@@ -35,7 +35,7 @@ public class ImportService {
 	}
 
 	@Transactional
-	public ImportResponse importBatch(JsonNode body) {
+	public ImportResponse importBatch(JsonNode body, List<String> groups) {
 		if (body == null || !body.isObject()) {
 			throw ApiException.importInvalid("ImportBatch must be a JSON object");
 		}
@@ -46,6 +46,9 @@ public class ImportService {
 		}
 		if (batchKey.length() > 200 || scopeId.length() > 200) {
 			throw ApiException.importInvalid("batchKey or scopeId exceeds max length");
+		}
+		if (groups != null && !repository.hasIngestGrant(scopeId, groups)) {
+			throw ApiException.forbidden("ingest permission required for this scope");
 		}
 		String sha = CanonicalJson.sha256Hex(body);
 		repository.ensureScope(scopeId);
@@ -159,7 +162,7 @@ public class ImportService {
 	}
 
 	@Transactional
-	public PublishResponse publish(String runId, JsonNode body) {
+	public PublishResponse publish(String runId, JsonNode body, List<String> groups) {
 		if (runId == null || runId.isEmpty() || runId.length() > 200) {
 			throw ApiException.invalidArgument("runId is invalid");
 		}
@@ -190,6 +193,9 @@ public class ImportService {
 		IngestRunRecord run = repository.findByRunId(runId);
 		if (run == null) {
 			throw ApiException.notFound("import run not found");
+		}
+		if (groups != null && !repository.hasIngestGrant(run.getScopeId(), groups)) {
+			throw ApiException.forbidden("ingest permission required for this scope");
 		}
 		CatalogScopeRow scope = repository.lockScope(run.getScopeId());
 		if (scope == null) {
