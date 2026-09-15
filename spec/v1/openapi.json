@@ -2761,6 +2761,18 @@
               "reveal",
               "recenter"
             ]
+          },
+          "scopeId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "description": "Catalog scope of this hit; required to disambiguate the same natural id across scopes."
+          },
+          "snapshotId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "description": "Published snapshot of this hit; pass to QueryRequest.snapshotId when seed ids collide across scopes."
           }
         },
         "required": [

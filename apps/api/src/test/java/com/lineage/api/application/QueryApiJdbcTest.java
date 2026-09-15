@@ -2,6 +2,7 @@ package com.lineage.api.application;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -71,6 +72,8 @@ class QueryApiJdbcTest {
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.items[0].object.id").value("root"))
 			.andExpect(jsonPath("$.items[0].action").value("recenter"))
+			.andExpect(jsonPath("$.items[0].scopeId").value("demo"))
+			.andExpect(jsonPath("$.items[0].snapshotId").isNotEmpty())
 			.andExpect(jsonPath("$.page.hasMore").value(false))
 			.andExpect(jsonPath("$.requestId").isNotEmpty())
 			.andReturn();
@@ -139,7 +142,8 @@ class QueryApiJdbcTest {
 	void unauthorizedAndForgedIdsDoNotLeak() throws Exception {
 		publishFixture();
 		jdbc.update("INSERT INTO scope_grant (scope_id, group_id, permission) VALUES ('demo', 'g-view', 'view')");
-		jdbc.update("INSERT INTO object_grant (object_id, group_id, effect) VALUES ('java-j', 'g-view', 'deny')");
+		jdbc.update(
+			"INSERT INTO object_grant (scope_id, object_id, group_id, effect) VALUES ('demo', 'java-j', 'g-view', 'deny')");
 
 		mockMvc.perform(get("/api/lineage/search").queryParam("q", "java-j").header("X-Embed-Groups", "g-view"))
 			.andExpect(status().isOk())
@@ -198,6 +202,74 @@ class QueryApiJdbcTest {
 			.header("X-Embed-Groups", "g-view"))
 			.andExpect(status().isNotFound())
 			.andExpect(jsonPath("$.code").value("NOT_FOUND"));
+	}
+
+	@Test
+	void twoScopeRootSearchCarriesSnapshotAndCreateQueryRequiresSnapshot() throws Exception {
+		publishFixture();
+		JsonNode otherFixture = loadFixture().deepCopy();
+		((com.fasterxml.jackson.databind.node.ObjectNode) otherFixture).put("scopeId", "other");
+		((com.fasterxml.jackson.databind.node.ObjectNode) otherFixture).put("batchKey", "other-001");
+		MvcResult createdOther = mockMvc.perform(post("/api/imports")
+			.contentType(MediaType.APPLICATION_JSON)
+			.header("X-CSRF-Token", "dev")
+			.content(mapper.writeValueAsBytes(otherFixture)))
+			.andExpect(status().isAccepted())
+			.andReturn();
+		String otherRun = mapper.readTree(createdOther.getResponse().getContentAsByteArray()).get("runId").asText();
+		mockMvc.perform(post("/api/imports/" + otherRun + "/publish")
+			.contentType(MediaType.APPLICATION_JSON)
+			.header("X-CSRF-Token", "dev")
+			.content("{\"expectedActiveSnapshotId\":null}"))
+			.andExpect(status().isOk());
+
+		MvcResult search = mockMvc.perform(get("/api/lineage/search").queryParam("q", "root"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.items.length()").value(2))
+			.andReturn();
+		JsonNode items = mapper.readTree(search.getResponse().getContentAsByteArray()).get("items");
+		boolean sawDemo = false;
+		boolean sawOther = false;
+		for (int i = 0; i < items.size(); i++) {
+			JsonNode hit = items.get(i);
+			assertEquals("root", hit.get("object").get("id").asText());
+			assertTrue(hit.hasNonNull("snapshotId"));
+			String scope = hit.get("scopeId").asText();
+			if ("demo".equals(scope)) {
+				sawDemo = true;
+			}
+			if ("other".equals(scope)) {
+				sawOther = true;
+			}
+		}
+		assertTrue(sawDemo && sawOther);
+
+		mockMvc.perform(post("/api/lineage/queries")
+			.contentType(MediaType.APPLICATION_JSON)
+			.header("X-CSRF-Token", "dev")
+			.content("{\"seedId\":\"root\"}"))
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.code").value("INVALID_SEED"))
+			.andExpect(jsonPath("$.retryable").value(false));
+
+		String demoSnap = jdbc.queryForObject("SELECT active_snapshot_id FROM catalog_scope WHERE scope_id = ?",
+			String.class, "demo");
+		String otherSnap = jdbc.queryForObject("SELECT active_snapshot_id FROM catalog_scope WHERE scope_id = ?",
+			String.class, "other");
+		mockMvc.perform(post("/api/lineage/queries")
+			.contentType(MediaType.APPLICATION_JSON)
+			.header("X-CSRF-Token", "dev")
+			.content("{\"seedId\":\"root\",\"snapshotId\":\"" + demoSnap + "\"}"))
+			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.seed.id").value("root"))
+			.andExpect(jsonPath("$.meta.snapshotId").value(demoSnap));
+		mockMvc.perform(post("/api/lineage/queries")
+			.contentType(MediaType.APPLICATION_JSON)
+			.header("X-CSRF-Token", "dev")
+			.content("{\"seedId\":\"root\",\"snapshotId\":\"" + otherSnap + "\"}"))
+			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.seed.id").value("root"))
+			.andExpect(jsonPath("$.meta.snapshotId").value(otherSnap));
 	}
 
 	@Test

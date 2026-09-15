@@ -2,6 +2,7 @@ package com.lineage.api.interfaces;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -35,6 +36,17 @@ public class ApiExceptionHandler {
 	public ResponseEntity<ErrorBody> handleBadRequest(Exception ex, HttpServletRequest request) {
 		return ResponseEntity.status(HttpStatus.BAD_REQUEST)
 			.body(new ErrorBody("INVALID_ARGUMENT", ex.getMessage(), RequestIdFilter.from(request), false));
+	}
+
+	@ExceptionHandler(DataIntegrityViolationException.class)
+	public ResponseEntity<ErrorBody> handleIntegrity(DataIntegrityViolationException ex, HttpServletRequest request) {
+		String path = request.getRequestURI();
+		if (path != null && path.startsWith("/api/imports")) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorBody("IMPORT_INVALID",
+				"import payload conflicts with stored identity or constraints", RequestIdFilter.from(request),
+				false));
+		}
+		return handleUnexpected(ex, request);
 	}
 
 	@ExceptionHandler(Exception.class)

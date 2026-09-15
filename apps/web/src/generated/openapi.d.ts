@@ -373,6 +373,10 @@ export interface components {
             object: components["schemas"]["Object"];
             /** @enum {string} */
             action: "reveal" | "recenter";
+            /** @description Catalog scope of this hit; required to disambiguate the same natural id across scopes. */
+            scopeId?: string;
+            /** @description Published snapshot of this hit; pass to QueryRequest.snapshotId when seed ids collide across scopes. */
+            snapshotId?: string;
         };
         SearchResponse: {
             requestId: string;

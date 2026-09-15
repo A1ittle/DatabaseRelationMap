@@ -2,7 +2,7 @@
 
 本目录只提供**嵌入式工具**开发用的临时库，不是治理平台或生产部署。数据卷可随时删掉。
 
-API 在**无** `SPRING_DATASOURCE_URL` 时仍可启动 `/api/health`。设置该 URL（以及可选 `FLYWAY_ENABLED=true`）后，启动时跑 Flyway `V1__storage.sql`。
+API 在**无** `SPRING_DATASOURCE_URL` 时仍可启动 `/api/health`。设置该 URL（以及可选 `FLYWAY_ENABLED=true`）后，启动时跑 Flyway `V1__storage.sql` 再跑 `V2__object_identity_scope_pk.sql`（不要改 V1 checksum）。V2 之后同一自然 `object_id` 可出现在多个 scope。
 
 ## 启动 / 停止 / 销毁
 
@@ -64,7 +64,7 @@ docker compose -f deploy/docker-compose.yml exec postgres pg_isready -U lineage 
 
 ## Flyway 迁移验收（SRE，需要 Docker）
 
-权威 DDL 是 `apps/api/src/main/resources/db/migration/V1__storage.sql`（与 `spec/v1/storage.sql` 同结构）。
+权威运行时 DDL 是 Flyway `V1__storage.sql` + `V2__object_identity_scope_pk.sql`。`spec/v1/storage.sql` 记录 greenfield（已含 V2 的 scoped PK），不要把 V1 改成与 spec 字节级相等。
 
 ```bash
 cp deploy/.env.example deploy/.env   # 只改本地副本，不要提交
@@ -97,7 +97,7 @@ docker compose -f deploy/docker-compose.yml down -v
 ./deploy/scripts/smoke-storage.sh
 ```
 
-把 `spec/v1/storage.sql` 直接打进可销毁库。正式路径是 `migrate-verify.sh` / Flyway V1。失败时先 `down -v`。
+把 `spec/v1/storage.sql` 直接打进可销毁库（greenfield / post-V2 形态）。正式路径是 `migrate-verify.sh` / Flyway V1+V2。失败时先 `down -v`。
 
 ## 回滚 / 停止
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Apply Flyway V1 to the disposable local PostgreSQL 17, print info, destroy the volume.
+# Apply Flyway V1+V2 to the disposable local PostgreSQL 17, print info, destroy the volume.
 #
 # Requires Docker Compose. Agent hosts without Docker: BLOCKED (exit 1).
 # Idempotent: a second flyway:migrate is a no-op; down -v returns a blank volume.

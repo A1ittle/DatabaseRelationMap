@@ -1,6 +1,6 @@
 package com.lineage.api.infrastructure;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -14,8 +14,9 @@ import org.junit.jupiter.api.Test;
 
 /**
  * No Docker / no H2: PostgreSQL-specific DDL (IDENTITY, functional indexes)
- * is not executed here. This test only proves the V1 resource is on the
- * classpath and matches {@code spec/v1/storage.sql} after comment stripping.
+ * is not executed here. This test only proves migration resources are on the
+ * classpath. V1 is frozen (do not rewrite checksums). V2 + spec/v1/storage.sql
+ * document the scoped object_identity PK used by running apps / greenfield.
  */
 class FlywayMigrationResourceTest {
 
@@ -42,13 +43,27 @@ class FlywayMigrationResourceTest {
 		for (String table : REQUIRED_TABLES) {
 			assertTrue(sql.contains("CREATE TABLE " + table), "missing table " + table);
 		}
+		assertTrue(sql.contains("object_id text PRIMARY KEY"));
+		assertFalse(sql.contains("PRIMARY KEY (scope_id, object_id)"));
 	}
 
 	@Test
-	void v1MigrationMatchesSpecStorageSql() throws IOException {
-		String migration = stripSqlCommentsAndWhitespace(readClasspath("db/migration/V1__storage.sql"));
-		String spec = stripSqlCommentsAndWhitespace(readClasspath("spec/v1/storage.sql"));
-		assertEquals(spec, migration);
+	void v2MigrationScopesObjectIdentityPk() throws IOException {
+		String sql = readClasspath("db/migration/V2__object_identity_scope_pk.sql");
+		assertNotNull(sql);
+		assertTrue(sql.contains("PRIMARY KEY (scope_id, object_id)"));
+		assertTrue(sql.contains("DROP CONSTRAINT object_identity_pkey"));
+		assertTrue(sql.contains("object_grant"));
+		assertTrue(sql.contains("FOREIGN KEY (scope_id, object_id) REFERENCES object_identity (scope_id, object_id)"));
+	}
+
+	@Test
+	void specStorageDocumentsScopedPkForGreenfield() throws IOException {
+		String spec = readClasspath("spec/v1/storage.sql");
+		assertTrue(spec.contains("PRIMARY KEY(scope_id,object_id)"));
+		assertTrue(spec.contains("PRIMARY KEY(scope_id,object_id,group_id)"));
+		assertTrue(spec.contains("FOREIGN KEY(scope_id,object_id) REFERENCES object_identity(scope_id,object_id)"));
+		assertFalse(spec.contains("object_id text PRIMARY KEY"));
 	}
 
 	private static String readClasspath(String path) throws IOException {

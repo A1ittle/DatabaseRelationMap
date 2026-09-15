@@ -37,30 +37,31 @@ public class QueryJdbcRepository {
 			ACTIVE_MAPPER);
 	}
 
-	public SeedHit findActiveSeed(String objectId, String snapshotId) {
-		List<SeedHit> rows;
+	/**
+	 * Active seeds for {@code objectId}, always snapshot-qualified.
+	 * Without {@code snapshotId}, returns every matching active snapshot (ordered by
+	 * scope then snapshot) so callers can reject cross-scope ambiguity instead of
+	 * taking an unordered first row.
+	 */
+	public List<SeedHit> findActiveSeeds(String objectId, String snapshotId) {
 		if (snapshotId == null || snapshotId.isEmpty()) {
-			rows = jdbc.query(
+			return jdbc.query(
 				"SELECT ov.object_id, ov.snapshot_id, s.scope_id, s.coverage, cs.active_snapshot_id "
 					+ "FROM object_version ov "
 					+ "JOIN snapshot s ON s.snapshot_id = ov.snapshot_id "
 					+ "JOIN catalog_scope cs ON cs.scope_id = s.scope_id "
-					+ "WHERE ov.object_id = ? AND cs.active_snapshot_id = ov.snapshot_id",
+					+ "WHERE ov.object_id = ? AND cs.active_snapshot_id = ov.snapshot_id "
+					+ "ORDER BY s.scope_id ASC, ov.snapshot_id ASC",
 				SEED_MAPPER, objectId);
 		}
-		else {
-			rows = jdbc.query(
-				"SELECT ov.object_id, ov.snapshot_id, s.scope_id, s.coverage, cs.active_snapshot_id "
-					+ "FROM object_version ov "
-					+ "JOIN snapshot s ON s.snapshot_id = ov.snapshot_id "
-					+ "JOIN catalog_scope cs ON cs.scope_id = s.scope_id "
-					+ "WHERE ov.object_id = ? AND ov.snapshot_id = ?",
-				SEED_MAPPER, objectId, snapshotId);
-		}
-		if (rows.isEmpty()) {
-			return null;
-		}
-		return rows.get(0);
+		return jdbc.query(
+			"SELECT ov.object_id, ov.snapshot_id, s.scope_id, s.coverage, cs.active_snapshot_id "
+				+ "FROM object_version ov "
+				+ "JOIN snapshot s ON s.snapshot_id = ov.snapshot_id "
+				+ "JOIN catalog_scope cs ON cs.scope_id = s.scope_id "
+				+ "WHERE ov.object_id = ? AND ov.snapshot_id = ? "
+				+ "ORDER BY s.scope_id ASC, ov.snapshot_id ASC",
+			SEED_MAPPER, objectId, snapshotId);
 	}
 
 	public SnapshotCatalog loadSnapshot(String snapshotId) {
@@ -132,8 +133,8 @@ public class QueryJdbcRepository {
 			return Collections.emptyList();
 		}
 		String sql = "SELECT og.object_id, og.group_id, og.effect FROM object_grant og "
-			+ "JOIN object_identity oi ON oi.object_id = og.object_id "
-			+ "WHERE oi.scope_id = ? AND og.group_id IN (" + placeholders(groups.size()) + ")";
+			+ "JOIN object_identity oi ON oi.scope_id = og.scope_id AND oi.object_id = og.object_id "
+			+ "WHERE og.scope_id = ? AND og.group_id IN (" + placeholders(groups.size()) + ")";
 		Object[] args = new Object[groups.size() + 1];
 		args[0] = scopeId;
 		for (int i = 0; i < groups.size(); i++) {

@@ -106,7 +106,7 @@ public class ImportJdbcRepository {
 		}
 		jdbc.batchUpdate(
 			"INSERT INTO object_identity (object_id, scope_id, source_identity) VALUES (?, ?, ?) "
-				+ "ON CONFLICT (object_id) DO NOTHING",
+				+ "ON CONFLICT (scope_id, object_id) DO NOTHING",
 			new BatchPreparedStatementSetter() {
 				@Override
 				public void setValues(PreparedStatement ps, int i) throws SQLException {

@@ -155,6 +155,6 @@ JDBC 测试会 `TRUNCATE` 目录表；上表链路跑在 `./mvnw test` **之前*
 | 演示数据 | 仅 `fixtures/v1` 与手写 counterexamples。证据文案写明 synthetic。 |
 | 查询上下文 | 进程内缓存；发布新快照不会改写已创建 query 的 snapshot 绑定。多实例不共享 query。 |
 | 视觉 | P4 冻结的是 chrome/token（1280/390 × 四视图），不是 flowchart 像素对齐。 |
-| Flyway | V1 = `spec/v1/storage.sql`。Boot 2.7 自带 Flyway 8.x 对 PG 17 会打 untested 警告；功能本机可用。 |
+| Flyway | 运行中的库是 **V1 + V2**（不要改 V1 checksum）。V2 把 `object_identity` PK 改为 `(scope_id, object_id)`，`object_grant` 带 `scope_id`。`spec/v1/storage.sql` 是 greenfield 文档；V2 才是运行时真相。多 scope 可共用自然 id（如 `root`）。Boot 2.7 自带 Flyway 8.x 对 PG 17 会打 untested 警告；功能本机可用。 |
 
 规模、备份、生产部署演练不在本验收范围。
