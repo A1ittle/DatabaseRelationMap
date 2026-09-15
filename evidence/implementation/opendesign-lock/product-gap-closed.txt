@@ -1,0 +1,35 @@
+OpenDesign design-lock vs PR #22 hops canvas
+date_utc: 20260915
+branch: feat/tree-opendesign-design-lock (off feat/tree-opendesign-desktop / PR #22)
+base: ac07df7 feat(web): OpenDesign columnar hops tree on desktop
+viewport target: 1280×800 desktop only (no 390)
+fixture-only. No SSO. Not 可上线.
+
+Locked refs
+  checklist: evidence/implementation/opendesign-lock/design-lock-checklist-clean.md
+  prototype shot: shot-520-tree-default.png (default 1 层, few cards, 28px grid)
+  prototype: reference/open-design/program-lineage-handoff/prototype/lineage-map-v2.html
+
+Product capture
+  Live API / Playwright product-*.png was NOT available in this agent turn
+  (no running lineage query against 520 fixture in this session).
+  Do not treat shot-520-*.png as product output.
+
+Gaps closed in code (compare mentally to shot-520-tree-default.png)
+
+  1. Toolbar depth segments: 「1 层」「2 层」「全部 · 聚类」
+     selected = --fg bg / --surface text; hover --fg-hover (DepthSeg.vue).
+  2. Default depth=1: filterProjectionByDepth keeps layoutRank ≤ depth;
+     seed rank 0 always. First paint is not all ranks.
+  3. 「全部 · 聚类」(depth=99) + large graph (matchedDownstream/statsDownstream > 40
+     or renderLimited) forces mode=overview. Focus never paints 500+ NodeCards.
+  4. Stage hairline: .tree-stage.stage 28px grid on --bg (already in #22; class stage added).
+  5. Legend next to tree: 「实线 · 主依赖」「虚线 · 跨支关联」「Java 只作为叶子」.
+  6. Overview ClusterCard: hop×type count bar when cluster.count > 5;
+     click → members API names + 「其余 N」. No invented lineage.
+  7. Double-click NodeCard: type=table && id≠seed → createQuery (change-root).
+  8. Vitest: depthFilter.test.js; npm test 71 green.
+
+Depends on PR #22 (columnar hops tree). Merge #22 first or stack this on top.
+RESULT: code gaps vs lock closed; product PNG deferred (no live API).
+No「可上线」claim.
