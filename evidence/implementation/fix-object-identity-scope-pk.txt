@@ -1,0 +1,53 @@
+command: JAVA_HOME=/home/box/tools/jdk8u504-b01 ./mvnw test
+cwd: /workspace/DatabaseRelationMap/apps/api
+started: 2026-09-15T04:12:33Z
+note: P1 Flyway V2 object_identity PK (scope_id, object_id). V1 checksum left unchanged (-456316441). Two scopes can both publish natural id root. Import DataIntegrityViolationException → IMPORT_INVALID retryable=false. Real JDBC against deploy/ PostgreSQL 17. No OIDC. No secrets.
+----- stdout (surefire summary) -----
+[INFO] Running com.lineage.api.LineageApiApplicationTests
+[INFO] Tests run: 12, Failures: 0, Errors: 0, Skipped: 0
+[INFO] Running com.lineage.api.infrastructure.FlywayMigrationResourceTest
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0
+[INFO] Running com.lineage.api.infrastructure.OptionalDataSourceEnvironmentPostProcessorTest
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0
+[INFO] Running com.lineage.api.domain.graph.P1CounterexampleSuiteTest
+[INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0
+[INFO] Running com.lineage.api.application.QueryApiJdbcTest
+[INFO] Tests run: 7, Failures: 0, Errors: 0, Skipped: 0
+[INFO] Running com.lineage.api.application.CanonicalJsonTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0
+[INFO] Running com.lineage.api.application.ImportValidatorTest
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0
+[INFO] Running com.lineage.api.application.ImportPublishJdbcTest
+[INFO] Tests run: 15, Failures: 0, Errors: 0, Skipped: 0
+[INFO] Running com.lineage.api.application.EmbedAuthzTest
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0
+
+[INFO] Tests run: 59, Failures: 0, Errors: 0, Skipped: 0
+[INFO] BUILD SUCCESS
+----- end -----
+Flyway on lineage DB:
+  version 1 checksum -456316441 success t  (unchanged)
+  version 2 checksum -757120583 success t  (object identity scope pk)
+  object_identity_pkey PRIMARY KEY (scope_id, object_id)
+  object_grant_pkey PRIMARY KEY (scope_id, object_id, group_id)
+  object_grant_scope_id_object_id_fkey → object_identity(scope_id, object_id)
+exit_code: 0
+finished: 2026-09-15T04:12:39Z
+
+python3 tools/validate_design.py → status PASS
+web: cd apps/web && npm test
+vitest 1.6.1: 11 files, 43 tests, 0 fail
+
+Coverage for this fix:
+  - Flyway V2 only; V1 not rewritten
+  - ImportJdbcRepository ON CONFLICT (scope_id, object_id) DO NOTHING
+  - findActiveSeeds is snapshot-qualified and ordered; >1 active seed without snapshotId → INVALID_SEED
+  - SearchHit carries scopeId + snapshotId
+  - object_grant reads/writes include scope_id
+  - Import integrity conflict is 400 IMPORT_INVALID retryable=false (not 503)
+  - JDBC: two scopes both publish root; fixture tests still green
+
+environment: Temurin JDK 8u504-b01, Maven Wrapper, Spring Boot 2.7.18, PostgreSQL 17.11 via deploy/docker-compose.yml (postgres:17), Flyway 8.5.13
+
+Auth: lineage.security.mode=open (no OIDC).
+No secrets / .env committed.

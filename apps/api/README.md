@@ -1,7 +1,9 @@
 # lineage-api
 
 Spring Boot 2.7.18 API (Java 8, Maven Wrapper). Graph algorithms in
-`domain/graph`. Flyway V1 lives at `src/main/resources/db/migration/V1__storage.sql`.
+`domain/graph`. Flyway V1 lives at `src/main/resources/db/migration/V1__storage.sql`
+(frozen checksum). V2 `V2__object_identity_scope_pk.sql` scopes `object_identity`
+PK to `(scope_id, object_id)` so the same natural id can exist in two scopes.
 
 ```bash
 JAVA_HOME=/home/box/tools/jdk8u504-b01 ./mvnw -DskipTests package

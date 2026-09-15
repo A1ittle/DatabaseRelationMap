@@ -1,5 +1,6 @@
--- PostgreSQL 17 schema design; not executed against a database in this design task.
--- A future migration runner owns transactions; deployment must validate this on a disposable DB.
+-- PostgreSQL 17 schema design (greenfield / post-V2).
+-- Running apps apply Flyway V1 then V2; do not rewrite V1 checksums.
+-- V2 is the source of truth for object_identity / object_grant on running databases.
 CREATE TABLE catalog_scope (
   scope_id text PRIMARY KEY,
   display_name text NOT NULL,
@@ -30,11 +31,11 @@ CREATE TABLE snapshot (
 ALTER TABLE catalog_scope ADD CONSTRAINT active_snapshot_in_scope
   FOREIGN KEY (scope_id,active_snapshot_id) REFERENCES snapshot(scope_id,snapshot_id);
 CREATE TABLE object_identity (
-  object_id text PRIMARY KEY,
   scope_id text NOT NULL REFERENCES catalog_scope(scope_id),
+  object_id text NOT NULL,
   source_identity text NOT NULL,
-  UNIQUE(scope_id,source_identity),
-  UNIQUE(scope_id,object_id)
+  PRIMARY KEY(scope_id,object_id),
+  UNIQUE(scope_id,source_identity)
 );
 CREATE TABLE object_version (
   snapshot_id text NOT NULL,
@@ -97,10 +98,12 @@ CREATE TABLE scope_grant (
   PRIMARY KEY(scope_id,group_id,permission)
 );
 CREATE TABLE object_grant (
-  object_id text NOT NULL REFERENCES object_identity(object_id),
+  scope_id text NOT NULL,
+  object_id text NOT NULL,
   group_id text NOT NULL,
   effect text NOT NULL CHECK(effect IN ('allow','deny')),
-  PRIMARY KEY(object_id,group_id)
+  PRIMARY KEY(scope_id,object_id,group_id),
+  FOREIGN KEY(scope_id,object_id) REFERENCES object_identity(scope_id,object_id)
 );
 CREATE TABLE policy_revision (
   singleton boolean PRIMARY KEY DEFAULT true CHECK(singleton),

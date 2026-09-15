@@ -322,6 +322,54 @@ class ImportPublishJdbcTest {
 	}
 
 	@Test
+	void twoScopesCanPublishSharedNaturalIdRoot() throws Exception {
+		JsonNode demo = loadFixture();
+		JsonNode demoReady = importAccepted(demo);
+		mockMvc.perform(post("/api/imports/" + demoReady.get("runId").asText() + "/publish")
+			.contentType(MediaType.APPLICATION_JSON)
+			.header("X-CSRF-Token", "dev")
+			.content("{\"expectedActiveSnapshotId\":null}"))
+			.andExpect(status().isOk());
+
+		ObjectNode other = demo.deepCopy();
+		other.put("scopeId", "other");
+		other.put("batchKey", "other-001");
+		JsonNode otherReady = importAccepted(other);
+		mockMvc.perform(post("/api/imports/" + otherReady.get("runId").asText() + "/publish")
+			.contentType(MediaType.APPLICATION_JSON)
+			.header("X-CSRF-Token", "dev")
+			.content("{\"expectedActiveSnapshotId\":null}"))
+			.andExpect(status().isOk());
+
+		assertEquals(Integer.valueOf(2), jdbc.queryForObject(
+			"SELECT COUNT(*) FROM object_identity WHERE object_id = ?", Integer.class, "root"));
+		assertEquals(Integer.valueOf(2), jdbc.queryForObject(
+			"SELECT COUNT(DISTINCT scope_id) FROM object_identity WHERE object_id = ?", Integer.class, "root"));
+		assertEquals(demoReady.get("snapshotId").asText(),
+			jdbc.queryForObject("SELECT active_snapshot_id FROM catalog_scope WHERE scope_id = ?", String.class,
+				"demo"));
+		assertEquals(otherReady.get("snapshotId").asText(),
+			jdbc.queryForObject("SELECT active_snapshot_id FROM catalog_scope WHERE scope_id = ?", String.class,
+				"other"));
+	}
+
+	@Test
+	void identityConflictOnImportIsImportInvalidNotUnavailable() throws Exception {
+		jdbc.update(
+			"INSERT INTO catalog_scope (scope_id, display_name, active_snapshot_id, revision) VALUES ('demo', 'demo', NULL, 0)");
+		jdbc.update(
+			"INSERT INTO object_identity (object_id, scope_id, source_identity) VALUES ('other-root', 'demo', 'root')");
+		JsonNode fixture = loadFixture();
+		mockMvc.perform(post("/api/imports")
+			.contentType(MediaType.APPLICATION_JSON)
+			.header("X-CSRF-Token", "dev")
+			.content(mapper.writeValueAsBytes(fixture)))
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.code").value("IMPORT_INVALID"))
+			.andExpect(jsonPath("$.retryable").value(false));
+	}
+
+	@Test
 	void unknownRunIsNotFound() throws Exception {
 		mockMvc.perform(get("/api/imports/does-not-exist"))
 			.andExpect(status().isNotFound())

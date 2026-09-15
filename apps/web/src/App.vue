@@ -571,7 +571,7 @@ export default {
         this.ensureCandidateAndSelect(hit.object.id)
         return
       }
-      this.createQuery(hit.object.id)
+      this.createQuery(hit.object.id, hit.snapshotId || null)
     },
     createQuery: function (seedId, snapshotId, opts) {
       var self = this

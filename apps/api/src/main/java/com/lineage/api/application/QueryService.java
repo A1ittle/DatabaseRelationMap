@@ -82,14 +82,17 @@ public class QueryService {
 		if (cursor != null && cursor.length() > 4096) {
 			throw ApiException.cursorMismatch("cursor is invalid");
 		}
-		List<CatalogObject> hits = new ArrayList<CatalogObject>();
+		List<RankedHit> hits = new ArrayList<RankedHit>();
 		Set<String> revealIds = Collections.emptySet();
 		if (queryId != null && !queryId.isEmpty()) {
 			QueryContext ctx = requireQuery(queryId, groups);
 			revealIds = ctx.getClassification().getReach();
 			String like = likePattern(query);
 			List<String> authorized = new ArrayList<String>(ctx.getAuthorizedObjectIds());
-			hits.addAll(repository.search(ctx.getSnapshotId(), like, authorized));
+			List<CatalogObject> found = repository.search(ctx.getSnapshotId(), like, authorized);
+			for (int i = 0; i < found.size(); i++) {
+				hits.add(new RankedHit(found.get(i), ctx.getScopeId(), ctx.getSnapshotId()));
+			}
 		}
 		else {
 			List<ActiveSnapshot> active = repository.listActiveSnapshots();
@@ -100,21 +103,24 @@ public class QueryService {
 			for (int i = 0; i < active.size(); i++) {
 				ActiveSnapshot snap = active.get(i);
 				Set<String> authorized = resolveAuthorized(snap.snapshotId, snap.scopeId, groups);
-				hits.addAll(repository.search(snap.snapshotId, like,
-					groups == null ? null : new ArrayList<String>(authorized)));
+				List<CatalogObject> found = repository.search(snap.snapshotId, like,
+					groups == null ? null : new ArrayList<String>(authorized));
+				for (int j = 0; j < found.size(); j++) {
+					hits.add(new RankedHit(found.get(j), snap.scopeId, snap.snapshotId));
+				}
 			}
-			sortCatalog(hits);
 		}
+		sortRanked(hits);
 		int from = offsetAfter(hits, cursor);
 		boolean hasMore = hits.size() > from + pageLimit;
 		int to = Math.min(hits.size(), from + pageLimit);
 		List<SearchHitDto> items = new ArrayList<SearchHitDto>();
 		for (int i = from; i < to; i++) {
-			CatalogObject obj = hits.get(i);
-			String action = revealIds.contains(obj.id) ? "reveal" : "recenter";
-			items.add(new SearchHitDto(toObject(obj), action));
+			RankedHit hit = hits.get(i);
+			String action = revealIds.contains(hit.obj.id) ? "reveal" : "recenter";
+			items.add(new SearchHitDto(toObject(hit.obj), action, hit.scopeId, hit.snapshotId));
 		}
-		String next = hasMore && to > from ? hits.get(to - 1).id : null;
+		String next = hasMore && to > from ? cursorOf(hits.get(to - 1)) : null;
 		return new SearchResponseDto(requestId, items, new PageInfo(next, hasMore, Integer.valueOf(hits.size())));
 	}
 
@@ -141,10 +147,14 @@ public class QueryService {
 				throw ApiException.invalidArgument("QueryRequest has unknown properties");
 			}
 		}
-		SeedHit seed = repository.findActiveSeed(seedId, snapshotId);
-		if (seed == null) {
+		List<SeedHit> seeds = repository.findActiveSeeds(seedId, snapshotId);
+		if (seeds.isEmpty()) {
 			throw ApiException.invalidSeed("seed is not in the active snapshot");
 		}
+		if (seeds.size() > 1) {
+			throw ApiException.invalidSeed("seed is ambiguous across scopes; pass snapshotId");
+		}
+		SeedHit seed = seeds.get(0);
 		if (snapshotId != null && !snapshotId.equals(seed.activeSnapshotId)) {
 			throw ApiException.policyChanged("snapshotId is not the active snapshot");
 		}
@@ -790,11 +800,19 @@ public class QueryService {
 		});
 	}
 
-	private static void sortCatalog(List<CatalogObject> objects) {
-		Collections.sort(objects, new Comparator<CatalogObject>() {
+	private static void sortRanked(List<RankedHit> hits) {
+		Collections.sort(hits, new Comparator<RankedHit>() {
 			@Override
-			public int compare(CatalogObject a, CatalogObject b) {
-				return compareCatalog(a, b);
+			public int compare(RankedHit a, RankedHit b) {
+				int c = compareCatalog(a.obj, b.obj);
+				if (c != 0) {
+					return c;
+				}
+				int s = a.snapshotId.compareTo(b.snapshotId);
+				if (s != 0) {
+					return s;
+				}
+				return a.scopeId.compareTo(b.scopeId);
 			}
 		});
 	}
@@ -852,16 +870,32 @@ public class QueryService {
 		return set;
 	}
 
-	private int offsetAfter(List<CatalogObject> hits, String cursor) {
+	private int offsetAfter(List<RankedHit> hits, String cursor) {
 		if (cursor == null || cursor.isEmpty()) {
 			return 0;
 		}
 		for (int i = 0; i < hits.size(); i++) {
-			if (cursor.equals(hits.get(i).id)) {
+			if (cursor.equals(cursorOf(hits.get(i)))) {
 				return i + 1;
 			}
 		}
 		throw ApiException.cursorMismatch("cursor is invalid");
+	}
+
+	private static String cursorOf(RankedHit hit) {
+		return hit.snapshotId + "\t" + hit.obj.id;
+	}
+
+	private static final class RankedHit {
+		private final CatalogObject obj;
+		private final String scopeId;
+		private final String snapshotId;
+
+		private RankedHit(CatalogObject obj, String scopeId, String snapshotId) {
+			this.obj = obj;
+			this.scopeId = scopeId;
+			this.snapshotId = snapshotId;
+		}
 	}
 
 	private int offsetCluster(List<ClusterDto> clusters, String cursor) {

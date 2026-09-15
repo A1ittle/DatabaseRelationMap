@@ -18,7 +18,7 @@ docker compose -f deploy/docker-compose.yml down -v     # 销毁数据
 
 ## Java 8 + Spring Boot 2.7 API
 
-**无** `SPRING_DATASOURCE_URL` 时 API 仍可起 `/api/health`。有 URL 时 Flyway V1 在启动时执行（除非 `FLYWAY_ENABLED=false`）。
+**无** `SPRING_DATASOURCE_URL` 时 API 仍可起 `/api/health`。有 URL 时 Flyway V1 再 V2 在启动时执行（除非 `FLYWAY_ENABLED=false`）。不要改 V1 checksum。V2 后多 scope 可共用自然 object id。
 
 ```bash
 export SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/lineage

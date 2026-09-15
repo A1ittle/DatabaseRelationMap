@@ -72,8 +72,10 @@ FLYWAY_ENABLED=true          # default false; URL present enables Flyway unless 
 
 Without `SPRING_DATASOURCE_URL`, DataSource and Flyway auto-configuration stay
 excluded so `/api/health` still works. With a URL, Boot runs
-`classpath:db/migration` (`V1__storage.sql`) on startup. Optional profile `db`
-(`application-db.yml`) is the explicit opt-in.
+`classpath:db/migration` (`V1__storage.sql` then `V2__object_identity_scope_pk.sql`)
+on startup. Do not rewrite V1 checksums. Optional profile `db`
+(`application-db.yml`) is the explicit opt-in. After V2, the same natural
+`object_id` (for example `root`) may exist in more than one `catalog_scope`.
 
 Live migrate against disposable PG 17 (Docker required):
 
@@ -166,7 +168,11 @@ OPTIONS preflight succeeds for allowlisted origins. Prefer same-origin reverse
 proxy so the browser omits `Origin` and ACAO is unnecessary.
 
 JDBC tests: `QueryApiJdbcTest` (import+publish fixture, then search / query /
-children / projection / path, plus unauthorized-id cases).
+children / projection / path, plus unauthorized-id cases). After V2, two scopes
+may both publish natural id `root`; search hits include `scopeId`/`snapshotId`,
+and `POST /api/lineage/queries` without `snapshotId` is `INVALID_SEED` when the
+seed is ambiguous. Import integrity conflicts map to `IMPORT_INVALID`
+(`retryable=false`), not 503 `TEMPORARILY_UNAVAILABLE`.
 
 ## Design checks (already in repo)
 
