@@ -29,10 +29,7 @@ const CHROME = process.env.CHROME_PATH || '/usr/bin/google-chrome'
 const COPY_BEST = process.env.COPY_BEST !== '0'
 
 const MODES = ['tree', 'overview', 'impact', 'path']
-const VIEWPORTS = [
-  { name: '1280', width: 1280, height: 800 },
-  { name: '390', width: 390, height: 844 }
-]
+const VIEWPORTS = [{ name: '1280', width: 1280, height: 800 }]
 
 const SEED = 'root'
 const SELECTED = 'view-a'
@@ -160,12 +157,7 @@ function pageUrl(mode) {
 async function waitSettled(page, mode) {
   await page.waitForSelector('.shell', { timeout: 20000 })
   if (mode === 'tree') {
-    await page.waitForSelector('.tree-row', { timeout: 25000 })
-    const closed = page.locator('.twist[aria-expanded="false"]')
-    if ((await closed.count()) > 0) {
-      await closed.first().click()
-      await page.waitForTimeout(600)
-    }
+    await page.waitForSelector('.tree-canvas-panel .node', { timeout: 25000 })
   } else if (mode === 'overview') {
     await page.waitForFunction(
       function () {

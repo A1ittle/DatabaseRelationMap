@@ -29,6 +29,7 @@
   --tree: #299236;
   --cross: #425468;
   --unclassified: #8250df;
+  --java-col: #f3f1f8;
 }
 
 @supports (color: oklch(0% 0 0)) {
@@ -52,6 +53,7 @@
     --fg-press: oklch(10% 0.02 240);
     --tree: oklch(58% 0.16 145);
     --cross: oklch(44% 0.04 250);
+    --java-col: oklch(97% 0.012 280);
   }
 }
 

@@ -90,6 +90,8 @@
           :expanded="expanded"
           :selected-id="selectedId"
           :child-pages="childPages"
+          :seed-id="seedId"
+          :projection="projection"
           @select="selectNode"
           @toggle="toggleExpand"
           @more="loadMoreChildren"
@@ -1543,7 +1545,6 @@ button:focus-visible,
   vertical-align: bottom;
 }
 
-.tree-row .name,
 .hit .name,
 .impact-row .name,
 .member-btn .name,
@@ -1712,53 +1713,6 @@ button:focus-visible,
   margin: 0;
   color: var(--muted);
   font-size: 0.85rem;
-}
-
-.tree-list {
-  list-style: none;
-  margin: 0;
-  padding: 0 0 0 12px;
-}
-
-.tree-list.root {
-  padding-left: 0;
-}
-
-.tree-item {
-  margin: 2px 0;
-}
-
-.tree-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-  padding: 3px 4px;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.tree-row:hover {
-  background: var(--hover);
-}
-
-.tree-row.selected,
-.tree-item.selected > .tree-row {
-  background: var(--press);
-}
-
-.twist {
-  width: 22px;
-  height: 22px;
-  padding: 0;
-  border: none;
-  background: transparent;
-  line-height: 1;
-}
-
-.twist.spacer {
-  display: inline-block;
-  width: 22px;
 }
 
 .badge {
