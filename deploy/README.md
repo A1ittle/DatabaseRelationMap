@@ -125,3 +125,22 @@ docker compose -f deploy/docker-compose.yml down -v
 - 真实导入/发布 API（P2 本切片只做迁移与接线）
 
 不要把占位密码或 fixture 当成试点已接通。
+
+## P5 规模抽检与备份恢复
+
+本地可销毁 PG + Java 8 API 抽检（**不是**生产验收，不写「可上线」）：
+
+```bash
+cp deploy/.env.example deploy/.env   # 若尚无 .env
+./deploy/scripts/scale-sample.sh     # 500+ fixture 导入/发布 + 冷/热查询计时 + 备份恢复
+# 仅备份恢复：
+./deploy/scripts/backup-restore-drill.sh
+```
+
+- Fixture：`fixtures/v1/scale-500.json`（合成 500+ 可达 / 高扇出 / 长链；非真实血缘）
+- 证据：`evidence/implementation/p5-scale-sample.txt`、`evidence/implementation/p5-backup/restore-receipt-*.txt`
+- `.dump` 本地产物，已 gitignore；真实数据 / SSO / 生产备份策略仍 **BLOCKED**
+- UI 浏览器渲染耗时本脚本不测（见收据 `UI_browser_render_ms: NOT_RUN`）
+
+回滚：`docker compose -f deploy/docker-compose.yml down -v` 销毁卷；脚本默认 EXIT 时也会 down -v（`KEEP_PG=1` 除外）。
+

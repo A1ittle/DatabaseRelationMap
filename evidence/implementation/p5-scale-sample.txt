@@ -1,0 +1,27 @@
+DatabaseRelationMap P5 scale sample (SRE)
+date_utc: 20260915T011529Z
+host: cursor
+os: Linux 6.12.94+
+python: 3.13.5
+arch: x86_64
+cpu_logical: 8
+mem_total_kb: 16397616
+concurrency: 1 (sequential HTTP; no multi-client load)
+fixture: fixtures/v1/scale-500.json
+fixture_objects: 551
+fixture_relations: 552
+fixture_note: synthetic 500+ reachable / high fanout / long chain / sparse cross; NOT real lineage
+bfs_reachable_via_children_api: 551
+queryId: b7be3662-0f6d-4347-95a7-b4ab2f76b7af
+
+timings_ms (cold = first sample; hot = median of remaining):
+  - search_root cold=40.3 hot_median=10.6 all=[40.3, 12.0, 10.9, 10.3, 10.3]
+  - create_query_seed_root cold=40.1 hot_median=None all=[40.1]
+  - children_scale-fan-00 cold=6.2 hot_median=3.4 all=[6.2, 3.3, 3.2, 3.7, 3.4]
+  - projection_default_layer cold=8.4 hot_median=5.0 all=[8.4, 5.1, 5.0, 5.9, 4.7]
+
+UI_browser_render_ms: NOT_RUN (SRE API/DB drill only; Vue paint not measured)
+SSO / real data / production: BLOCKED — not exercised
+FINDING: object_identity ON CONFLICT (object_id) DO NOTHING collides across scopes when object ids overlap (demo root vs scale); fixture uses scale-* ids as workaround. Engineer should fix PK/upsert to (scope_id, object_id).
+RESULT: PASS (local API cold/hot + 500+ fixture import/publish)
+NOT production-ready claim.
