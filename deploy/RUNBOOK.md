@@ -36,3 +36,13 @@ JAVA_HOME=/home/box/tools/jdk8u504-b01 ./mvnw spring-boot:run -Dspring-boot.run.
 ## BLOCKED
 
 真实 SSO、企业 OIDC、生产凭证、真实血缘数据：未提供，不在此编造。
+
+## P5 scale + backup (local only)
+
+```bash
+./deploy/scripts/scale-sample.sh
+./deploy/scripts/backup-restore-drill.sh
+```
+
+See `deploy/README.md` §P5. Evidence: `evidence/implementation/p5-scale-sample.txt`. Not production.
+

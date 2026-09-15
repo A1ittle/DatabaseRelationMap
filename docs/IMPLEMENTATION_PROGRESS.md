@@ -611,3 +611,15 @@ direction, not the HANDOFF React/TS + Java 21 default.
 - Host installed `docker.io` + compose plugin; ran `./deploy/scripts/migrate-verify.sh` on PR #6 tip.
 - Result: **PASS** (`exit 0`). Evidence: `evidence/implementation/p2-migrate-verify.txt`.
 - `deploy/.env` used from `.env.example` placeholders only; not committed.
+
+## Stage: P5 scale sample + backup/restore (SRE)
+
+**Branch:** `feat/p5-scale-backup-restore`.
+
+- Synthetic fixture `fixtures/v1/scale-500.json` (500+ reachable from root; not real lineage).
+- `deploy/scripts/scale-sample.sh`: disposable PG → Flyway → API → import/publish → cold/hot search/children/projection (concurrency=1).
+- `deploy/scripts/backup-restore-drill.sh`: `pg_dump -Fc` → truncate marker → `pg_restore --clean` on local volume.
+- Evidence under `evidence/implementation/p5-*.txt` (+ local `.dump` gitignored).
+- **BLOCKED / out of scope:** real data, SSO, production backup/PITR, multi-client load, UI browser paint timings.
+- **No「可上线」claim.**
+

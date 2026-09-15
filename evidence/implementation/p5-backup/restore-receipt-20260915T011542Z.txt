@@ -1,0 +1,11 @@
+DatabaseRelationMap P5 backup-restore drill
+date_utc: 20260915T011542Z
+host: cursor
+postgres_image: postgres:17
+dump: /workspace/DatabaseRelationMap/evidence/implementation/p5-backup/lineage-20260915T011542Z.dump
+dump_bytes: 44703
+marker_before: p5-backup-restore-20260915T011542Z
+marker_after: p5-backup-restore-20260915T011542Z
+RESULT: PASS
+NOTE: disposable local volume only; not a production backup policy.
+BLOCKED: real prod backup/PITR/SSO not exercised.
