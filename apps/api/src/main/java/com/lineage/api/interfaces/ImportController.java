@@ -1,5 +1,7 @@
 package com.lineage.api.interfaces;
 
+import javax.servlet.http.HttpServletRequest;
+
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -27,8 +29,8 @@ public class ImportController {
 	}
 
 	@PostMapping("/api/imports")
-	public ResponseEntity<ImportResponse> createImport(@RequestBody JsonNode body) {
-		ImportResponse response = service().importBatch(body);
+	public ResponseEntity<ImportResponse> createImport(@RequestBody JsonNode body, HttpServletRequest request) {
+		ImportResponse response = service().importBatch(body, EmbedGroups.from(request));
 		return ResponseEntity.status(HttpStatus.ACCEPTED).body(response);
 	}
 
@@ -40,8 +42,9 @@ public class ImportController {
 	}
 
 	@PostMapping("/api/imports/{runId}/publish")
-	public PublishResponse publishImport(@PathVariable("runId") String runId, @RequestBody JsonNode body) {
-		return service().publish(runId, body);
+	public PublishResponse publishImport(@PathVariable("runId") String runId, @RequestBody JsonNode body,
+			HttpServletRequest request) {
+		return service().publish(runId, body, EmbedGroups.from(request));
 	}
 
 	private ImportService service() {

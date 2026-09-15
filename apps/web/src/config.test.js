@@ -14,4 +14,9 @@ describe('readEnv', function () {
     expect(readEnv({ VITE_API_BASE: '', VITE_EMBED_GROUPS: 'g1,g2' }).apiBase).toBe('')
     expect(readEnv({ VITE_API_BASE: '', VITE_EMBED_GROUPS: 'g1,g2' }).embedGroups).toBe('g1,g2')
   })
+
+  it('reads VITE_CSRF_TOKEN and defaults to dev matching the API', function () {
+    expect(readEnv({}).csrfToken).toBe('dev')
+    expect(readEnv({ VITE_CSRF_TOKEN: 'host-token' }).csrfToken).toBe('host-token')
+  })
 })

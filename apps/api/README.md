@@ -42,14 +42,17 @@ export SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/lineage
 export SPRING_DATASOURCE_USERNAME=lineage
 export SPRING_DATASOURCE_PASSWORD=change-me-local   # deploy/.env placeholder
 JAVA_HOME=/home/box/tools/jdk8u504-b01 ./mvnw spring-boot:run
-curl -sS -H 'Content-Type: application/json' -H 'X-CSRF-Token: demo' \
+curl -sS -H 'Content-Type: application/json' -H 'X-CSRF-Token: dev' \
   --data-binary @../../fixtures/v1/import.json http://localhost:8080/api/imports
 # 202 {"runId","status":"ready",...}
-curl -sS -H 'Content-Type: application/json' -H 'X-CSRF-Token: demo' \
+curl -sS -H 'Content-Type: application/json' -H 'X-CSRF-Token: dev' \
   --data '{"expectedActiveSnapshotId":null}' \
   http://localhost:8080/api/imports/{runId}/publish
 ```
 
 Auth for this PR: `lineage.security.mode=open` (default) — no OIDC. Optional
 `LINEAGE_SECURITY_MODE=demo-header` requires `X-Lineage-Demo-User`. POST import
-and publish require any non-empty `X-CSRF-Token`. Do not invent production SSO.
+and publish require `X-CSRF-Token` equal to `lineage.csrf.token` (default `dev`).
+When `X-Embed-Groups` is present, import/publish also need `ingest` on the scope.
+CORS allowlist is `lineage.cors.allowed-origins` (exact match; never echo Origin).
+Prefer same-origin reverse-proxy. Do not invent production SSO.

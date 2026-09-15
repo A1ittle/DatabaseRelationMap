@@ -80,7 +80,7 @@ class ImportPublishJdbcTest {
 
 		MvcResult created = mockMvc.perform(post("/api/imports")
 			.contentType(MediaType.APPLICATION_JSON)
-			.header("X-CSRF-Token", "demo")
+			.header("X-CSRF-Token", "dev")
 			.content(mapper.writeValueAsBytes(fixture)))
 			.andExpect(status().isAccepted())
 			.andExpect(jsonPath("$.status").value("ready"))
@@ -93,7 +93,7 @@ class ImportPublishJdbcTest {
 
 		mockMvc.perform(post("/api/imports/" + runId + "/publish")
 			.contentType(MediaType.APPLICATION_JSON)
-			.header("X-CSRF-Token", "demo")
+			.header("X-CSRF-Token", "dev")
 			.content("{\"expectedActiveSnapshotId\":null}"))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.snapshotId").value(snapshotId))
@@ -138,7 +138,7 @@ class ImportPublishJdbcTest {
 		mutated.put("sourceVersion", "other");
 		MvcResult result = mockMvc.perform(post("/api/imports")
 			.contentType(MediaType.APPLICATION_JSON)
-			.header("X-CSRF-Token", "demo")
+			.header("X-CSRF-Token", "dev")
 			.content(mapper.writeValueAsBytes(mutated)))
 			.andExpect(status().isBadRequest())
 			.andExpect(jsonPath("$.code").value("IMPORT_INVALID"))
@@ -154,7 +154,7 @@ class ImportPublishJdbcTest {
 		String snapshotId = ready.get("snapshotId").asText();
 		mockMvc.perform(post("/api/imports/" + ready.get("runId").asText() + "/publish")
 			.contentType(MediaType.APPLICATION_JSON)
-			.header("X-CSRF-Token", "demo")
+			.header("X-CSRF-Token", "dev")
 			.content("{\"expectedActiveSnapshotId\":null}"))
 			.andExpect(status().isOk());
 
@@ -168,7 +168,7 @@ class ImportPublishJdbcTest {
 
 		mockMvc.perform(post("/api/imports/" + failed.get("runId").asText() + "/publish")
 			.contentType(MediaType.APPLICATION_JSON)
-			.header("X-CSRF-Token", "demo")
+			.header("X-CSRF-Token", "dev")
 			.content("{\"expectedActiveSnapshotId\":\"" + snapshotId + "\"}"))
 			.andExpect(status().isBadRequest())
 			.andExpect(jsonPath("$.code").value("INVALID_ARGUMENT"));
@@ -188,7 +188,7 @@ class ImportPublishJdbcTest {
 		JsonNode first = importAccepted(fixture);
 		mockMvc.perform(post("/api/imports/" + first.get("runId").asText() + "/publish")
 			.contentType(MediaType.APPLICATION_JSON)
-			.header("X-CSRF-Token", "demo")
+			.header("X-CSRF-Token", "dev")
 			.content("{\"expectedActiveSnapshotId\":null}"))
 			.andExpect(status().isOk());
 
@@ -197,7 +197,7 @@ class ImportPublishJdbcTest {
 		JsonNode second = importAccepted(secondBatch);
 		mockMvc.perform(post("/api/imports/" + second.get("runId").asText() + "/publish")
 			.contentType(MediaType.APPLICATION_JSON)
-			.header("X-CSRF-Token", "demo")
+			.header("X-CSRF-Token", "dev")
 			.content("{\"expectedActiveSnapshotId\":null}"))
 			.andExpect(status().isConflict())
 			.andExpect(jsonPath("$.code").value("PUBLISH_CONFLICT"))
@@ -263,6 +263,65 @@ class ImportPublishJdbcTest {
 	}
 
 	@Test
+	void wrongCsrfTokenIsRejected() throws Exception {
+		mockMvc.perform(post("/api/imports")
+			.contentType(MediaType.APPLICATION_JSON)
+			.header("X-CSRF-Token", "wrong")
+			.content("{}"))
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.code").value("INVALID_ARGUMENT"));
+	}
+
+	@Test
+	void embedGroupsWithoutIngestIsForbiddenOnImport() throws Exception {
+		JsonNode fixture = loadFixture();
+		mockMvc.perform(post("/api/imports")
+			.contentType(MediaType.APPLICATION_JSON)
+			.header("X-CSRF-Token", "dev")
+			.header("X-Embed-Groups", "g-view")
+			.content(mapper.writeValueAsBytes(fixture)))
+			.andExpect(status().isForbidden())
+			.andExpect(jsonPath("$.code").value("FORBIDDEN"));
+	}
+
+	@Test
+	void embedGroupsWithoutIngestIsForbiddenOnPublish() throws Exception {
+		JsonNode created = importAccepted(loadFixture());
+		jdbc.update("INSERT INTO scope_grant (scope_id, group_id, permission) VALUES ('demo', 'g-view', 'view')");
+		mockMvc.perform(post("/api/imports/" + created.get("runId").asText() + "/publish")
+			.contentType(MediaType.APPLICATION_JSON)
+			.header("X-CSRF-Token", "dev")
+			.header("X-Embed-Groups", "g-view")
+			.content("{\"expectedActiveSnapshotId\":null}"))
+			.andExpect(status().isForbidden())
+			.andExpect(jsonPath("$.code").value("FORBIDDEN"));
+	}
+
+	@Test
+	void embedGroupsWithIngestCanImportAndPublish() throws Exception {
+		jdbc.update(
+			"INSERT INTO catalog_scope (scope_id, display_name, active_snapshot_id, revision) VALUES ('demo', 'demo', NULL, 0)");
+		jdbc.update("INSERT INTO scope_grant (scope_id, group_id, permission) VALUES ('demo', 'g-ingest', 'ingest')");
+		JsonNode fixture = loadFixture();
+		MvcResult created = mockMvc.perform(post("/api/imports")
+			.contentType(MediaType.APPLICATION_JSON)
+			.header("X-CSRF-Token", "dev")
+			.header("X-Embed-Groups", "g-ingest")
+			.content(mapper.writeValueAsBytes(fixture)))
+			.andExpect(status().isAccepted())
+			.andExpect(jsonPath("$.status").value("ready"))
+			.andReturn();
+		String runId = mapper.readTree(created.getResponse().getContentAsByteArray()).get("runId").asText();
+		mockMvc.perform(post("/api/imports/" + runId + "/publish")
+			.contentType(MediaType.APPLICATION_JSON)
+			.header("X-CSRF-Token", "dev")
+			.header("X-Embed-Groups", "g-ingest")
+			.content("{\"expectedActiveSnapshotId\":null}"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.snapshotId").isNotEmpty());
+	}
+
+	@Test
 	void unknownRunIsNotFound() throws Exception {
 		mockMvc.perform(get("/api/imports/does-not-exist"))
 			.andExpect(status().isNotFound())
@@ -299,7 +358,7 @@ class ImportPublishJdbcTest {
 			AtomicInteger wins, AtomicInteger conflicts) {
 		try {
 			start.await();
-			importService.publish(runId, body);
+			importService.publish(runId, body, null);
 			wins.incrementAndGet();
 		}
 		catch (ApiException ex) {
@@ -321,7 +380,7 @@ class ImportPublishJdbcTest {
 	private JsonNode importAccepted(JsonNode body) throws Exception {
 		MvcResult result = mockMvc.perform(post("/api/imports")
 			.contentType(MediaType.APPLICATION_JSON)
-			.header("X-CSRF-Token", "demo")
+			.header("X-CSRF-Token", "dev")
 			.content(mapper.writeValueAsBytes(body)))
 			.andExpect(status().isAccepted())
 			.andReturn();

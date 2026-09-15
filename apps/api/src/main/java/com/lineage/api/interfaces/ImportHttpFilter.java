@@ -2,6 +2,7 @@ package com.lineage.api.interfaces;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.List;
 
 import javax.servlet.FilterChain;
@@ -20,9 +21,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lineage.api.interfaces.dto.ErrorBody;
 
 /**
- * CSRF (any non-empty token in open/demo mode) for mutating import and lineage
- * routes, 50 MiB payload cap, and optional {@code X-Embed-Groups}. OIDC is out
- * of scope — see {@code lineage.security.mode}.
+ * CSRF: {@code X-CSRF-Token} must constant-time equal {@code lineage.csrf.token}
+ * (local default {@code dev}) on mutating import and lineage routes. 50 MiB
+ * payload cap, and optional {@code X-Embed-Groups}. OIDC is out of scope — see
+ * {@code lineage.security.mode}.
  */
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE + 10)
@@ -32,11 +34,15 @@ public class ImportHttpFilter extends OncePerRequestFilter {
 
 	private final ObjectMapper objectMapper;
 	private final String securityMode;
+	private final byte[] csrfTokenBytes;
 
 	public ImportHttpFilter(ObjectMapper objectMapper,
-			@Value("${lineage.security.mode:open}") String securityMode) {
+			@Value("${lineage.security.mode:open}") String securityMode,
+			@Value("${lineage.csrf.token:dev}") String csrfToken) {
 		this.objectMapper = objectMapper;
 		this.securityMode = securityMode == null ? "open" : securityMode.trim();
+		String token = csrfToken == null ? "" : csrfToken.trim();
+		this.csrfTokenBytes = token.getBytes(StandardCharsets.UTF_8);
 	}
 
 	@Override
@@ -77,11 +83,23 @@ public class ImportHttpFilter extends OncePerRequestFilter {
 				writeError(request, response, 400, "INVALID_ARGUMENT", false, "X-CSRF-Token is required");
 				return;
 			}
+			if (!csrfMatches(csrf)) {
+				writeError(request, response, 400, "INVALID_ARGUMENT", false, "X-CSRF-Token is invalid");
+				return;
+			}
 		}
 		if (!allow(request, response)) {
 			return;
 		}
 		filterChain.doFilter(request, response);
+	}
+
+	private boolean csrfMatches(String header) {
+		if (csrfTokenBytes.length == 0) {
+			return false;
+		}
+		byte[] actual = header.getBytes(StandardCharsets.UTF_8);
+		return MessageDigest.isEqual(csrfTokenBytes, actual);
 	}
 
 	private boolean allow(HttpServletRequest request, HttpServletResponse response) throws IOException {

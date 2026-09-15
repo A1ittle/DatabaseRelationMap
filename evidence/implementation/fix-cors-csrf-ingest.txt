@@ -1,0 +1,45 @@
+command: JAVA_HOME=/home/box/tools/jdk8u504-b01 ./mvnw test
+cwd: /workspace/DatabaseRelationMap/apps/api
+started: 2026-09-15T03:02:58Z
+note: P0 CORS allowlist, CSRF constant-time compare, ingest grant on import/publish when X-Embed-Groups present. Real JDBC against deploy/ PostgreSQL 17. No OIDC. No object_identity PK change.
+----- stdout (surefire summary) -----
+[INFO] Running com.lineage.api.LineageApiApplicationTests
+[INFO] Tests run: 12, Failures: 0, Errors: 0, Skipped: 0
+[INFO] Running com.lineage.api.infrastructure.FlywayMigrationResourceTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0
+[INFO] Running com.lineage.api.infrastructure.OptionalDataSourceEnvironmentPostProcessorTest
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0
+[INFO] Running com.lineage.api.domain.graph.P1CounterexampleSuiteTest
+[INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0
+[INFO] Running com.lineage.api.application.QueryApiJdbcTest
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0
+[INFO] Running com.lineage.api.application.CanonicalJsonTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0
+[INFO] Running com.lineage.api.application.ImportValidatorTest
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0
+[INFO] Running com.lineage.api.application.ImportPublishJdbcTest
+[INFO] Tests run: 13, Failures: 0, Errors: 0, Skipped: 0
+[INFO] Running com.lineage.api.application.EmbedAuthzTest
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0
+
+[INFO] Tests run: 55, Failures: 0, Errors: 0, Skipped: 0
+[INFO] BUILD SUCCESS
+----- end -----
+exit_code: 0
+finished: 2026-09-15T03:03:11Z
+
+web: cd apps/web && npm test
+vitest 1.6.1: 11 files, 43 tests, 0 fail
+
+Coverage for this fix:
+  - CORS: exact allowlist Origin (127.0.0.1:5173 / localhost:5173) sets ACAO; unknown Origin is not echoed; missing Origin (same-origin) has no ACAO; OPTIONS preflight 204 for allowed origin
+  - CSRF: X-CSRF-Token must constant-time equal lineage.csrf.token (default `dev`); missing or wrong → 400 INVALID_ARGUMENT
+  - Open mode without X-Embed-Groups still imports/publishes with matching CSRF
+  - X-Embed-Groups present without scope_grant ingest → 403 FORBIDDEN on POST /api/imports and POST /api/imports/{runId}/publish
+  - X-Embed-Groups with ingest grant can import and publish
+  - Frontend VITE_CSRF_TOKEN defaults to `dev` matching the API
+
+environment: Temurin JDK 8u504-b01, Maven Wrapper, Spring Boot 2.7.18, PostgreSQL 17.11 via deploy/docker-compose.yml (postgres:17), Flyway 8.5.13
+
+Auth: lineage.security.mode=open (no OIDC). CSRF lineage.csrf.token=dev. CORS lineage.cors.allowed-origins exact match. Prefer same-origin reverse-proxy.
+No secrets / .env committed. Document env vars only (LINEAGE_CSRF_TOKEN, LINEAGE_CORS_ALLOWED_ORIGINS, VITE_CSRF_TOKEN).

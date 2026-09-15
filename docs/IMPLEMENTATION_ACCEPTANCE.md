@@ -116,7 +116,7 @@ JDBC 测试会 `TRUNCATE` 目录表；上表链路跑在 `./mvnw test` **之前*
    <iframe src="https://host.example/lineage/" title="程序血缘地图"></iframe>
    ```
 
-   跨源时：API 需允许该 `Origin`（open mode 的 `CorsFilter` 回显 `Origin`，允许头 `Content-Type, X-CSRF-Token, X-Embed-Groups, X-Request-Id, X-Lineage-Demo-User`，方法 GET/POST/OPTIONS）。凭证走请求头，不用 cookie。
+   跨源时：API 仅在 `Origin` **精确匹配** `lineage.cors.allowed-origins`（逗号分隔，本地默认 Vite `5173`/`4173`）时设置 `Access-Control-Allow-Origin`，**绝不回显任意 Origin**。允许头 `Content-Type, X-CSRF-Token, X-Embed-Groups, X-Request-Id, X-Lineage-Demo-User`，方法 GET/POST/OPTIONS。凭证走请求头，不用 cookie。**优先同域反代**（无 `Origin` 则无需 ACAO）。
 
 2. **同域静态 + 反代 `/api`**  
    把 `dist/` 放到宿主静态目录；把 `/api` 反代到 Java 8 服务。此时设 **`VITE_API_BASE=`（空字符串）** 走相对 `/api/...`，避免浏览器跨源。本地等价：`npm run dev` 已把 `/api` 代理到 `VITE_API_BASE`（默认 `http://127.0.0.1:8080`）。
@@ -126,19 +126,19 @@ JDBC 测试会 `TRUNCATE` 目录表；上表链路跑在 `./mvnw test` **之前*
 | 变量 | 默认 | 含义 |
 |---|---|---|
 | `VITE_API_BASE` | `http://127.0.0.1:8080` | API origin。空 = 同域。 |
-| `VITE_CSRF_TOKEN` | `dev` | 每个 POST 的 `X-CSRF-Token`。open mode 接受任意非空值。 |
-| `VITE_EMBED_GROUPS` | 省略 | 可选 `X-Embed-Groups`（逗号分隔）。省略 = 授权活跃快照全部对象。 |
+| `VITE_CSRF_TOKEN` | `dev` | 每个 POST 的 `X-CSRF-Token`。必须与 API `lineage.csrf.token`（默认 `dev`）一致。宿主真实嵌入须换成不可猜测值。 |
+| `VITE_EMBED_GROUPS` | 省略 | 可选 `X-Embed-Groups`（逗号分隔）。省略 = 授权活跃快照全部对象（open）。 |
 
 复制 `.env.example` → `.env.local`。不要提交密钥。
 
 ### CSRF（所有 POST）
 
-`POST /api/imports*`、`POST /api/lineage/queries`、`POST .../projection` 等 **必须** 带非空 `X-CSRF-Token`。本会话缺头 → 400 `INVALID_ARGUMENT` / `X-CSRF-Token is required`。载荷上限 50 MiB，否则 413 `PAYLOAD_TOO_LARGE`。
+`POST /api/imports*`、`POST /api/lineage/queries`、`POST .../projection` 等 **必须** 带与 `lineage.csrf.token` **常量时间相等** 的 `X-CSRF-Token`（本地默认 `dev`）。缺头或错 token → 400 `INVALID_ARGUMENT`。载荷上限 50 MiB，否则 413 `PAYLOAD_TOO_LARGE`。
 
 ### Open mode 注意
 
-- 默认 `lineage.security.mode=open`：**不是登录**。任何能打到 API 的调用者，在省略 `X-Embed-Groups` 时可读当前活跃快照。
-- 发送 `X-Embed-Groups` 时：按 `scope_grant`（`view`）+ `object_grant` 求交，**deny wins**。未授权 / 伪造对象 id 统一 `NOT_FOUND`，不泄露存在性。
+- 默认 `lineage.security.mode=open`：**不是登录**。任何能打到 API 的调用者，在省略 `X-Embed-Groups` 时可读当前活跃快照，且可 import/publish（仍须匹配 CSRF）。明确的本地全开模式，不是 SSO。
+- 发送 `X-Embed-Groups` 时：查询按 `scope_grant`（`view`）+ `object_grant` 求交，**deny wins**。未授权 / 伪造对象 id 统一 `NOT_FOUND`，不泄露存在性。`POST /api/imports` 与 `POST /api/imports/{runId}/publish` 还要求目标 scope 上有 `ingest` grant，否则 403 `FORBIDDEN`。
 - `queryId` 是会话凭据，**禁止写入 URL**。URL 只编码 `mode,seedId,snapshotId,selectedId,targetId,types,page,runId`；刷新会按 `seedId` 重建查询并重拉 API。
 - 可选 `LINEAGE_SECURITY_MODE=demo-header` + `X-Lineage-Demo-User`，仍不是 OIDC。
 
@@ -151,7 +151,7 @@ JDBC 测试会 `TRUNCATE` 目录表；上表链路跑在 `./mvnw test` **之前*
 | 工程栈 vs HANDOFF | 代码是 **Java 8 + Spring Boot 2.7 + Vue 2 嵌入壳**。[HANDOFF.md](../HANDOFF.md) 设计默认仍是 React + TypeScript + React Flow + Java 21 / Spring Boot 4.1。差值见 [ADR 0001](adr/0001-java8-vue2-embedded-vs-handoff.md)。不改产品语义（仅下游、Java 展示终点、主树/跨支、证据属关系、先授权再遍历）。 |
 | 无 React Flow / G6 | 画布是 Vue 2 可展开树 + CSS `kind-tree` / `kind-cross` / `kind-unclassified`。不要用原型流程图拓扑去 Diff 树。 |
 | 投影预算 | 服务端 200 对象 / 2000 关系。超限 `PROJECTION_LIMIT`；壳保留旧图并横幅「超预算，已保留原图」。fixture 远小于预算。 |
-| 嵌入鉴权 | 最小 stub（open / demo-header / `X-Embed-Groups`），**不是**企业 OIDC。 |
+| 嵌入鉴权 | 最小 stub（open / demo-header / `X-Embed-Groups`），**不是**企业 OIDC。CORS 白名单精确匹配；CSRF 与配置 token 常量时间比较；header 存在时 import/publish 要 `ingest` grant。 |
 | 演示数据 | 仅 `fixtures/v1` 与手写 counterexamples。证据文案写明 synthetic。 |
 | 查询上下文 | 进程内缓存；发布新快照不会改写已创建 query 的 snapshot 绑定。多实例不共享 query。 |
 | 视觉 | P4 冻结的是 chrome/token（1280/390 × 四视图），不是 flowchart 像素对齐。 |

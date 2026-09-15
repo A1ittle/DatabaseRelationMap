@@ -2,6 +2,7 @@
  * Runtime config for the embedded Vue 2 shell.
  * VITE_API_BASE defaults to http://127.0.0.1:8080 (OpenAPI host).
  * Empty VITE_API_BASE uses same-origin (Vite /api proxy in dev).
+ * VITE_CSRF_TOKEN defaults to `dev`, matching lineage.csrf.token.
  */
 export function readEnv(env) {
   const src = env || (typeof import.meta !== 'undefined' ? import.meta.env : {})
