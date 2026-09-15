@@ -1,0 +1,25 @@
+command: npm test && npm run build
+cwd: /workspace/DatabaseRelationMap/apps/web
+started: 2026-09-15T04:37:37Z
+note: P1 frontend URL snapshot / projection race. Same-seed snapshotId change recreates query. Stale-epoch createQuery/projection failures do not destroyQuery or roll back newer candidateIds. Collapse recomputes candidates from seed + still-expanded children pages + pins then POSTs projection replace. URL param names unchanged (never queryId). No OIDC. No secrets.
+----- stdout (vitest + vite) -----
+ RUN  v1.6.1 /workspace/DatabaseRelationMap/apps/web
+ Test Files  12 passed (12)
+      Tests  52 passed (52)
+ Duration  565ms
+
+vite v4.5.14 building for production...
+✓ 42 modules transformed.
+dist/index.html                   0.45 kB │ gzip:  0.33 kB
+dist/assets/index-d40f94bb.css   10.04 kB │ gzip:  2.79 kB
+dist/assets/index-e3eed438.js   135.28 kB │ gzip: 44.49 kB
+✓ built in 743ms
+----- end -----
+exit_code: 0
+finished: 2026-09-15T04:37:40Z
+
+coverage (vitest urlSnapshotRace.test.js):
+  same-seed snapshot change → recreate
+  URL snapshot cleared (follow active) → recreate
+  stale epoch fail ignored (shouldApplyQueryFailure / shouldRollbackCandidates)
+  collapse shrinks candidates (descendants dropped; pins kept)

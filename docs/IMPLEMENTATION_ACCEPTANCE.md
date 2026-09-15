@@ -139,7 +139,7 @@ JDBC 测试会 `TRUNCATE` 目录表；上表链路跑在 `./mvnw test` **之前*
 
 - 默认 `lineage.security.mode=open`：**不是登录**。任何能打到 API 的调用者，在省略 `X-Embed-Groups` 时可读当前活跃快照，且可 import/publish（仍须匹配 CSRF）。明确的本地全开模式，不是 SSO。
 - 发送 `X-Embed-Groups` 时：查询按 `scope_grant`（`view`）+ `object_grant` 求交，**deny wins**。未授权 / 伪造对象 id 统一 `NOT_FOUND`，不泄露存在性。`POST /api/imports` 与 `POST /api/imports/{runId}/publish` 还要求目标 scope 上有 `ingest` grant，否则 403 `FORBIDDEN`。
-- `queryId` 是会话凭据，**禁止写入 URL**。URL 只编码 `mode,seedId,snapshotId,selectedId,targetId,types,page,runId`；刷新会按 `seedId` 重建查询并重拉 API。
+- `queryId` 是会话凭据，**禁止写入 URL**。URL 只编码 `mode,seedId,snapshotId,selectedId,targetId,types,page,runId`；刷新会按 `seedId` 重建查询并重拉 API。同一 `seedId` 下 `snapshotId` 变化或清空（跟随活动快照）也会重建 query，不会沿用旧投影。折叠节点会按仍展开的 children 页 + pins 重算 `candidateIds` 并 replace projection，避免幽灵候选触发 `PROJECTION_LIMIT`。
 - 可选 `LINEAGE_SECURITY_MODE=demo-header` + `X-Lineage-Demo-User`，仍不是 OIDC。
 
 ---
