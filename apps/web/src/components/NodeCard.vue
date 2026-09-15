@@ -8,6 +8,7 @@
     :aria-label="ariaLabel"
     :title="copy.name"
     @click="$emit('select', nodeId)"
+    @dblclick="onDblclick"
   >
     <span class="node-ico" :class="icoClass" aria-hidden="true">
       <svg v-if="objectType === 'table'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
@@ -113,6 +114,13 @@ export default {
       ev.stopPropagation()
       this.$emit('toggle', this.nodeId)
       this.$emit('select', this.nodeId)
+    },
+    onDblclick: function (ev) {
+      if (this.objectType !== 'table' || this.isSeed || !this.nodeId) {
+        return
+      }
+      ev.preventDefault()
+      this.$emit('change-root', this.nodeId)
     }
   }
 }

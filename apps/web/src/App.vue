@@ -73,7 +73,10 @@
       <button type="button" class="ghost" :disabled="!canChangeRoot" @click="changeRoot">换根</button>
     </section>
 
-    <view-tabs v-if="meta" v-model="mode" :disabled="!queryId" />
+    <div v-if="meta" class="toolbar">
+      <view-tabs v-model="mode" :disabled="!queryId" />
+      <depth-seg :value="depth" :disabled="!queryId" @input="onDepthInput" />
+    </div>
     <type-filter v-if="meta && (mode === 'overview' || mode === 'impact')" v-model="filterTypes" />
 
     <div class="workspace" :class="'mode-' + mode">
@@ -92,9 +95,11 @@
           :child-pages="childPages"
           :seed-id="seedId"
           :projection="projection"
+          :depth="depth"
           @select="selectNode"
           @toggle="toggleExpand"
           @more="loadMoreChildren"
+          @change-root="recenterFromCard"
         />
         <cross-panel
           v-if="meta"
@@ -192,7 +197,12 @@ import {
   noHitsBanner,
   shouldDestroyQuery
 } from './exceptions/queryExceptions.js'
+import {
+  DEFAULT_DEPTH,
+  shouldForceOverview
+} from './graph/depthFilter.js'
 import LineageTree from './components/LineageTree.vue'
+import DepthSeg from './components/DepthSeg.vue'
 import CrossPanel from './components/CrossPanel.vue'
 import DetailPanel from './components/DetailPanel.vue'
 import ViewTabs from './components/ViewTabs.vue'
@@ -216,6 +226,7 @@ export default {
   name: 'App',
   components: {
     LineageTree,
+    DepthSeg,
     CrossPanel,
     DetailPanel,
     ViewTabs,
@@ -262,6 +273,7 @@ export default {
       projectionAbortCtl: freshAbort(),
       viewNonce: 0,
       mode: 'tree',
+      depth: DEFAULT_DEPTH,
       filterTypes: ALL_TYPES.slice(),
       targetId: '',
       syncingUrl: false,
@@ -480,6 +492,7 @@ export default {
       this.detail = null
       this.relations = []
       this.pins = []
+      this.depth = DEFAULT_DEPTH
       this.resetAuxViews()
       this.revision.reset()
       this.viewNonce += 1
@@ -621,14 +634,18 @@ export default {
           self.expanded = {}
           self.pins = []
           self.candidateIds = []
+          self.depth = DEFAULT_DEPTH
           self.viewNonce += 1
           var treeStatus = res.meta && res.meta.treeStatus
           var cyc = cycleNotice(treeStatus)
+          var down = res.stats && res.stats.downstream
           if (cyc) {
             self.notice = cyc
             if (!restoringUrl && self.mode === 'tree') {
               self.mode = 'impact'
             }
+          } else if (down > 40) {
+            self.notice = '正在准备 ' + down + ' 个对象的下游树，默认只展开 1 层。'
           }
           var initialRev = 0
           if (res.projection && res.projection.clientRevision != null) {
@@ -677,6 +694,34 @@ export default {
       }
       var snap = this.meta && this.meta.snapshotId
       this.createQuery(this.selectedId, snap)
+    },
+    recenterFromCard: function (id) {
+      var node
+      var type
+      if (!id || id === this.seedId) {
+        return
+      }
+      node = this.index && this.index.nodesById && this.index.nodesById[id]
+      type = node && node.object && node.object.type
+      if (type !== 'table') {
+        return
+      }
+      this.createQuery(id, this.meta && this.meta.snapshotId)
+    },
+    onDepthInput: function (next) {
+      var depth = Number(next)
+      this.depth = depth
+      if (
+        shouldForceOverview({
+          depth: depth,
+          matchedDownstream: this.projection && this.projection.matchedDownstream,
+          renderLimited: this.projection && this.projection.renderLimited,
+          nodeCount: this.projection && this.projection.nodes && this.projection.nodes.length,
+          statsDownstream: this.stats && this.stats.downstream
+        })
+      ) {
+        this.mode = 'overview'
+      }
     },
     commitProjectionResult: function (input) {
       var outcome = resolveProjectionOutcome({
@@ -1454,6 +1499,18 @@ button:focus-visible,
   }
 }
 
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 12px;
+  margin: 0 0 8px;
+}
+
+.toolbar .view-tabs {
+  margin: 0;
+}
+
 .view-tabs {
   display: flex;
   flex-wrap: wrap;
@@ -1493,6 +1550,53 @@ button:focus-visible,
 .view-tab.active:hover:not(:disabled),
 .view-tab[aria-selected='true']:hover:not(:disabled) {
   background: var(--fg-hover);
+  color: var(--surface);
+}
+
+.seg {
+  display: flex;
+}
+
+.seg button {
+  height: 44px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 0;
+  background: var(--surface);
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  color: var(--fg);
+}
+
+.seg button:first-child {
+  border-radius: 999px 0 0 999px;
+}
+
+.seg button:last-child {
+  border-radius: 0 999px 999px 0;
+  margin-left: -1px;
+}
+
+.seg button:hover:not(:disabled) {
+  background: var(--hover);
+  color: var(--fg);
+}
+
+.seg button[aria-pressed='true'] {
+  background: var(--fg);
+  color: var(--surface);
+  border-color: var(--fg);
+  z-index: 1;
+}
+
+.seg button[aria-pressed='true']:hover:not(:disabled) {
+  background: var(--fg-hover);
+  color: var(--surface);
+}
+
+.seg button[aria-pressed='true']:active:not(:disabled) {
+  background: var(--fg-press);
   color: var(--surface);
 }
 
@@ -1614,6 +1718,57 @@ button:focus-visible,
 .cluster-row .count {
   font-variant-numeric: tabular-nums;
   font-size: 0.8rem;
+}
+
+.cluster {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  height: auto;
+  min-height: 44px;
+  text-align: left;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--fg);
+}
+
+.cluster:hover:not(:disabled) {
+  background: var(--hover);
+  color: var(--fg);
+}
+
+.cluster-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+}
+
+.cluster-count {
+  font-family: var(--font-mono);
+  font-size: 22px;
+  font-weight: 500;
+  line-height: 1.3;
+  font-variant-numeric: tabular-nums;
+}
+
+.bars {
+  display: flex;
+  height: 8px;
+  border-radius: 99px;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+.bars i {
+  display: block;
+  height: 100%;
 }
 
 .path-form {

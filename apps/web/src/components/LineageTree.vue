@@ -7,7 +7,7 @@
       <span>Java 只作为叶子</span>
     </p>
     <p v-if="!columns.length" class="hint">搜索并选择一个表入口后，这里显示默认一层下游。</p>
-    <div v-else ref="stage" class="tree-stage">
+    <div v-else ref="stage" class="tree-stage stage">
       <div ref="inner" class="stage-inner">
         <svg
           class="edge-layer"
@@ -58,6 +58,7 @@
                 :dim="isDim(node.object.id)"
                 @select="$emit('select', $event)"
                 @toggle="$emit('toggle', $event)"
+                @change-root="$emit('change-root', $event)"
               />
               <button
                 v-if="showMore(node)"
@@ -98,6 +99,7 @@
 <script>
 import NodeCard from './NodeCard.vue'
 import { COL_CAP, groupColumns, sliceColumn } from '../graph/columns.js'
+import { DEFAULT_DEPTH, filterProjectionByDepth } from '../graph/depthFilter.js'
 import { edgeClassNames, edgePath } from '../graph/edgePath.js'
 import { crossEdgesFor } from '../graph/treeFromProjection.js'
 import { edgeOnPath, highlightIdSet, treePathIds } from '../graph/treePath.js'
@@ -112,7 +114,8 @@ export default {
     selectedId: { type: String, default: null },
     childPages: { type: Object, required: true },
     seedId: { type: String, default: null },
-    projection: { type: Object, default: null }
+    projection: { type: Object, default: null },
+    depth: { type: Number, default: DEFAULT_DEPTH }
   },
   data: function () {
     return {
@@ -124,8 +127,14 @@ export default {
     }
   },
   computed: {
+    visibleProjection: function () {
+      return filterProjectionByDepth(this.projection, this.depth, {
+        parentOf: this.index && this.index.parentOf,
+        expanded: this.expanded
+      })
+    },
     columns: function () {
-      var raw = groupColumns(this.projection)
+      var raw = groupColumns(this.visibleProjection)
       var self = this
       return raw.map(function (col) {
         var sliced = sliceColumn(col.nodes, !!self.openCols[col.rank], COL_CAP)
@@ -188,6 +197,9 @@ export default {
   },
   watch: {
     columns: function () {
+      this.scheduleEdges()
+    },
+    depth: function () {
       this.scheduleEdges()
     },
     selectedId: function () {
@@ -257,7 +269,7 @@ export default {
     drawEdges: function () {
       var inner = this.$refs.inner
       var vis = this.visibleIdSet
-      var edges = (this.projection && this.projection.edges) || []
+      var edges = (this.visibleProjection && this.visibleProjection.edges) || []
       var cr
       var sw
       var sh
