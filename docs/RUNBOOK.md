@@ -5,6 +5,10 @@ Do not put secrets in the repo. Copy env values from a local untracked `.env`.
 Java 8 + Vue 2 embedded shell (PM). HANDOFF default stack is unchanged in
 HANDOFF.md; see [ADR 0001](adr/0001-java8-vue2-embedded-vs-handoff.md).
 
+P5 local acceptance (what ran / what did not / BLOCKED) and how a host mounts
+the shell (iframe or same-origin static + `/api` proxy): [IMPLEMENTATION_ACCEPTANCE.md](IMPLEMENTATION_ACCEPTANCE.md).
+That document is **not** a production go-live claim.
+
 ## Frontend (`apps/web`)
 
 Vue 2 embedded shell (iframe-friendly). Search / query / four views (tree,

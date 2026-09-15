@@ -1,5 +1,48 @@
 # Implementation progress
 
+## Stage: P5 embedded acceptance (known limits)
+
+**Goal:** Record what this checkout actually runs locally for the embedded Vue 2
++ Java 8 tool, plus explicit unverified / BLOCKED buckets. Not scale, backup,
+or a production go-live claim. Fixture data only.
+
+**Branch:** `feat/p5-embedded-acceptance` (from `main@8fca1ad`).
+
+### Done
+
+- [docs/IMPLEMENTATION_ACCEPTANCE.md](IMPLEMENTATION_ACCEPTANCE.md) — three
+  buckets 本地已通过 / 未验证 / BLOCKED, plus 嵌入挂载说明 and known limits
+  (ADR 0001, no React Flow, 200/2000 budgets, open-mode embed auth).
+- Evidence: [p5-embedded-acceptance.txt](../evidence/implementation/p5-embedded-acceptance.txt).
+
+### Commands actually run (this machine)
+
+Environment: Python 3.13.5, Node v22, npm 10, Temurin JDK 8u504-b01, Vue 2.7.16,
+Vite 4.5, vitest 1.x, Spring Boot 2.7.18, Docker PostgreSQL 17 (`lineage-pg-local`).
+
+```text
+python3 tools/validate_design.py   # PASS; exit 0
+cd apps/web && npm test && npm run build
+# vitest 1.6.1: 11 files, 42 tests, 0 fail; vite build exit 0
+cd apps/api && JAVA_HOME=/home/box/tools/jdk8u504-b01 ./mvnw test
+# Tests run: 45, Failures: 0; BUILD SUCCESS; exit 0
+# live chain: import fixtures/v1 → search root → query → overview/impact/path/projection
+```
+
+### Gaps / blocked
+
+- A01–A22 matrix, Playwright E2E suite, p95 timings, 500+ scale — not run
+  (scale/backup is SRE).
+- Real customer lineage, enterprise SSO/OIDC, production host/credentials —
+  BLOCKED. Do not read this as 「生产可上线」.
+
+### Next
+
+SRE: scale, backup, disposable-PG ops. Product: real lineage + OIDC when those
+inputs exist. Engineer embedded slice stops here.
+
+---
+
 ## Stage: P4 visual freeze (fixture screenshot protocol)
 
 **Goal:** Align Vue shell CSS tokens with prototype `:root`, document a pixel-

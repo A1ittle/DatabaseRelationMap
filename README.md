@@ -10,7 +10,7 @@
 | [完整实现设计](docs/07-implementation-design.md) | 已收敛的架构、技术栈、数据模型、算法、API、前端状态、权限及部署 |
 | [开源参考与采用理由](docs/06-opensource-research.md) | 六个项目的已核实能力、源码证据、借鉴点与复用边界 |
 
-HANDOFF 设计默认方案仍为 React + TypeScript + React Flow；Java 21 + Spring Boot 4.1.x；PostgreSQL 17（见 [HANDOFF.md](HANDOFF.md)，不改产品语义）。工程栈按项目管理要求为 **Java 8 + Spring Boot 2.7.x + Vue 2 嵌入式壳**，见 [ADR 0001](docs/adr/0001-java8-vue2-embedded-vs-handoff.md)、[依赖基线](docs/DEPENDENCY_BASELINE.md) 与 [本地运行](docs/RUNBOOK.md)。PostgreSQL 由 SRE 提供，本仓库不提交密钥或 `.env`。P4：四视图 + URL 恢复 + 数据导入/发布页与异常态 + 视觉冻结（fixture 截图协议，见 [进度](docs/IMPLEMENTATION_PROGRESS.md)）。
+HANDOFF 设计默认方案仍为 React + TypeScript + React Flow；Java 21 + Spring Boot 4.1.x；PostgreSQL 17（见 [HANDOFF.md](HANDOFF.md)，不改产品语义）。工程栈按项目管理要求为 **Java 8 + Spring Boot 2.7.x + Vue 2 嵌入式壳**，见 [ADR 0001](docs/adr/0001-java8-vue2-embedded-vs-handoff.md)、[依赖基线](docs/DEPENDENCY_BASELINE.md) 与 [本地运行](docs/RUNBOOK.md)。PostgreSQL 由 SRE 提供，本仓库不提交密钥或 `.env`。P4：四视图 + URL 恢复 + 数据导入/发布页与异常态 + 视觉冻结（fixture 截图协议，见 [进度](docs/IMPLEMENTATION_PROGRESS.md)）。P5 嵌入式交付验收（本地已通过 / 未验证 / BLOCKED，**不是**生产可上线）见 [验收与限制](docs/IMPLEMENTATION_ACCEPTANCE.md)。
 
 ## 机器可读规格与示例
 
@@ -37,7 +37,7 @@ HANDOFF 设计默认方案仍为 React + TypeScript + React Flow；Java 21 + Spr
 
 已验证设计契约结构、示例及图不变量、错误输入拒绝、文档链接与原型副本哈希；原型参考样例回归为 10 个可达对象、9 条主边、3 条跨支。均不能代替业务应用验收。
 
-真实关系数据、企业登录/对象权限映射、目标部署环境仍未提供。设计采用明确默认值使本地编码可继续；真实接入、性能、SSO 和生产部署需后续单独验收。
+真实关系数据、企业登录/对象权限映射、目标部署环境仍未提供。设计采用明确默认值使本地编码可继续；真实接入、性能、SSO 和生产部署需后续单独验收。嵌入式工具在 disposable PG + fixture 上的本机绿灯见 [docs/IMPLEMENTATION_ACCEPTANCE.md](docs/IMPLEMENTATION_ACCEPTANCE.md)；该文不声明生产可上线。
 
 ## 本地启动
 
